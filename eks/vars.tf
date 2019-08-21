@@ -75,3 +75,11 @@ variable "instance_type_pool2" {
 variable "instance_type_pool3" {
   description = "The third instance type pool in which to look for Instances"
 }
+
+variable "key_name" {
+  description = "The name of the SSH key used to gain access to the worker and bastion Instances"
+}
+
+variable "key_value" {
+  description = "The public value of the SSH key used to gain access to the Instances"
+}

@@ -122,7 +122,7 @@ resource "aws_launch_template" "eks_worker_lt_latest_ami" {
   vpc_security_group_ids               = ["${var.vpc_security_group_ids}"]
   image_id                             = "${data.aws_ami.eks_worker.id}" # Using the latest AMI version
   instance_initiated_shutdown_behavior = "terminate"
-  key_name                             = "${aws_key_pair.bastion.key_name}"
+  key_name                             = "${aws_key_pair.ssh_key.key_name}"
   
   user_data = "${base64encode(data.template_file.eks_node_userdata.rendered)}"
 }
@@ -139,7 +139,7 @@ resource "aws_launch_template" "eks_worker_lt_fixed_ami" {
   vpc_security_group_ids               = ["${var.vpc_security_group_ids}"]
   image_id                             = "${var.eks_ami_id}" # Using a fixed version of kubectl 1.12.7 -> ami-091fc251b67b776c3
   instance_initiated_shutdown_behavior = "terminate"
-  key_name                             = "${aws_key_pair.bastion.key_name}"
+  key_name                             = "${aws_key_pair.ssh_key.key_name}"
   
   user_data = "${base64encode(data.template_file.eks_node_userdata.rendered)}"
 }

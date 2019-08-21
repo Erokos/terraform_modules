@@ -7,6 +7,5 @@ output "kubeconfig_certificate_authority_data" {
 }
 
 output "ami_id" {
-  value = "Some value"
+  value = "${aws_autoscaling_group.eks_mixed_instances_asg.ami_id}"
 }
-

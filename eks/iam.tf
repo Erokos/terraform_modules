@@ -64,4 +64,9 @@ resource "aws_iam_role_policy" "eks_node_allow_route53" {
   name = "eks_node_allow_route53"
   role = "${aws_iam_role.eks_node_role.id}"
   policy = "${data.aws_iam_policy_document.eks_node_allow_route53.json}"
-} 
+}
+
+resource "aws_key_pair" "ssh_key" {
+  key_name	    = "${var.key_name}"
+  public_key	= "${var.key_value}"
+}
