@@ -35,6 +35,42 @@ variable "use_latest_eks_ami" {
 
 variable "eks_ami_id" {
   description = "The AMI ID used on the EKS worker nodes"
+  default     = "ami-091fc251b67b776c3"
 }
 
+variable "vpc_zone_identifier" {
+  description = "List of subnets in which the Instances will be deployed and scaled"
+  type        = "list"
+}
 
+variable "max_size" {
+  description = "The max size of the cluster"
+}
+
+variable "min_size" {
+  description = "The minimum size of the cluster"
+}
+
+variable "desired_capacity" {
+  description = "The desired numbar of Instances for your cluster"
+}
+
+variable "on_demand_base_capacity" {
+  description = "The number of on demand Instances to start with"
+}
+
+variable "on_demand_percentage_above_base_capacity" {
+  description = "The percentage of scaled Instances that are on demand"
+}
+
+variable "instance_type_pool1" {
+  description = "The first instance type pool in which to look for Instances"
+}
+
+variable "instance_type_pool2" {
+  description = "The second instance type pool in which to look for Instances"
+}
+
+variable "instance_type_pool3" {
+  description = "The third instance type pool in which to look for Instances"
+}

@@ -174,6 +174,9 @@ data "template_file" "eks_node_userdata" {
 }
 
 resource "aws_launch_template" "eks_worker_lt_latest_ami" {
+  count = "${var.use_latest_eks_ami}"
+
+
   name                    = "${var.eks_cluster_name}-lt"
   disable_api_termination = false
   iam_instance_profile {
@@ -188,6 +191,9 @@ resource "aws_launch_template" "eks_worker_lt_latest_ami" {
 }
 
 resource "aws_launch_template" "eks_worker_lt_fixed_ami" {
+  count = "${1 - var.use_latest_eks_ami}"
+
+
   name                    = "${var.eks_cluster_name}-lt"
   disable_api_termination = false
   iam_instance_profile {
@@ -199,4 +205,52 @@ resource "aws_launch_template" "eks_worker_lt_fixed_ami" {
   key_name                             = "${aws_key_pair.bastion.key_name}"
   
   user_data = "${base64encode(data.template_file.eks_node_userdata.rendered)}"
+}
+
+resource "aws_autoscaling_group" "eks_mixed_instances_asg" {
+  max_size             = "${var.max_size}"
+  desired_capacity     = "${var.desired_capacity}"
+  min_size             = "${var.min_size}"
+  name                 = "${var.eks_cluster_name}-asg"
+  vpc_zone_identifier = ["${var.vpc_zone_identifier}"] # private subnets to which a bastion host is connected
+  
+  # This setting will guarantee 1 "On-Demand" instance at all times and scale using Spot Instances
+  # from pools listed below in the order specified
+  mixed_instances_policy = {
+    instances_distribution = {
+      on_demand_base_capacity = "${var.on_demand_base_capacity}"
+      on_demand_percentage_above_base_capacity = "${var.on_demand_percentage_above_base_capacity}"
+    }
+
+    launch_template {
+      launch_template_specification {
+        launch_template_id = "${element(concat(aws_launch_template.eks_worker_lt_fixed_ami.*.id, aws_launch_template.eks_worker_lt_latest_ami.*.id), 0)}"
+        version = "$$Latest"
+      }
+
+      override {
+        instance_type = "${var.instance_type_pool1}"
+      }
+
+      override {
+        instance_type = "${var.instance_type_pool2}"
+      }
+
+      override {
+        instance_type = "${var.instance_type_pool3}"
+      }
+    }
+  }
+
+  tag {
+    key                 = "${var.eks_cluster_name}-mixed-instances-asg"
+    value               = "${var.eks_cluster_name}-worker-node"
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "kubernetes.io/cluster/${var.eks_cluster_name}"
+    value               = "owned"
+    propagate_at_launch = true
+  }
 }
