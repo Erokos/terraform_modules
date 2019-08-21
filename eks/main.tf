@@ -18,72 +18,9 @@ resource "aws_eks_cluster" "eks_cluster" {
 #  * IAM role allowing Kubernetes actions to access other AWS services
 #  * EC2 Security Group to allow networking traffic
 #  * Data source to fetch latest EKS worker AMI or use a specific hardcoded AMI
-#  * AutoScaling Launch Configuration to configure worker instances
-#  * AutoScaling Group to launch worker instances
+#  * AutoScaling Launch Template to configure worker instances
+#  * AutoScaling Group with a mixed Instances policy to launch worker Instances
 #
-
-# First attach predefined policies but essential to EKS
-#  * IAM role and policy to allow the worker nodes to manage or retrieve data from other AWS services
-#  * Used by Kubernetes to allow worker nodes to join the cluster
-data "aws_iam_policy_document" "eks_node_assume_policy" {
-  statement {
-    actions = [
-      "sts:AssumeRole"
-    ]
-    principals {
-      type = "Service"
-      identifiers = [
-        "ec2.amazonaws.com"
-      ]
-    }
-  }
-}
-
-resource "aws_iam_role" "eks_node_role" {
-  name               = "${var.eks_cluster_name}-node-role"
-  path               = "/"
-  assume_role_policy = "${data.aws_iam_policy_document.eks_node_assume_policy.json}"
-}
-
-resource "aws_iam_role_policy_attachment" "eks_node_AmazonEKSWorkerNodePolicy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-  role       = "${aws_iam_role.eks_node_role.name}"
-}
-
-resource "aws_iam_role_policy_attachment" "eks_node_AmazonEKS_CNI_Policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-  role       = "${aws_iam_role.eks_node_role.name}"
-}
-
-resource "aws_iam_role_policy_attachment" "gdni_eks_node_AmazonEC2ContainerRegistryReadOnly" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-  role       = "${aws_iam_role.eks_node_role.name}"
-}
-
-# Allow mutating the EKS Route53 hosted zone
-data "aws_iam_policy_document" "eks_node_allow_route53" {
-  statement {
-    actions = [
-      "route53:ChangeResourceRecordSets"
-    ]
-    resources = [
-      "arn:aws:route53:::hostedzone/${aws_route53_zone.eks_private.zone_id}"
-    ]
-  }
-  statement {
-    actions = [
-      "route53:ListHostedZones",
-      "route53:ListResourceRecordSets"
-    ]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_role_policy" "eks_node_allow_route53" {
-  name = "eks_node_allow_route53"
-  role = "${aws_iam_role.eks_node_role.id}"
-  policy = "${data.aws_iam_policy_document.eks_node_allow_route53.json}"
-} 
 
 # Create a security group for worker nodes
 #  * Special kubernetes tag is mandatory
@@ -127,8 +64,8 @@ resource "aws_security_group_rule" "eks_node_ingress_cluster" {
   description              = "Allow worker Kubelets and pods to receive communication from the cluster control plane"
   from_port                = 1025
   protocol                 = "tcp"
-  security_group_id        = "${var.source_security_group_id}"
-  source_security_group_id = "${module.eks_vpc.default_security_group_id}"
+  security_group_id        = "${aws_security_group.eks_node_sg.id}"
+  source_security_group_id = "${var.source_security_group_id}"
   to_port                  = 65535
   type                     = "ingress"
 }
@@ -180,7 +117,7 @@ resource "aws_launch_template" "eks_worker_lt_latest_ami" {
   name                    = "${var.eks_cluster_name}-lt"
   disable_api_termination = false
   iam_instance_profile {
-    name = "${aws_iam_instance_profile.gdni_eks_node.name}"
+    name = "${aws_iam_instance_profile.eks_node_profile.name}"
   }
   vpc_security_group_ids               = ["${var.vpc_security_group_ids}"]
   image_id                             = "${data.aws_ami.eks_worker.id}" # Using the latest AMI version
@@ -197,7 +134,7 @@ resource "aws_launch_template" "eks_worker_lt_fixed_ami" {
   name                    = "${var.eks_cluster_name}-lt"
   disable_api_termination = false
   iam_instance_profile {
-    name = "${aws_iam_instance_profile.gdni_eks_node.name}"
+    name = "${aws_iam_instance_profile.eks_node_profile.name}"
   }
   vpc_security_group_ids               = ["${var.vpc_security_group_ids}"]
   image_id                             = "${var.eks_ami_id}" # Using a fixed version of kubectl 1.12.7 -> ami-091fc251b67b776c3

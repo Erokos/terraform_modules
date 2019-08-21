@@ -16,16 +16,17 @@ variable "vpc_id" {
   description = "The ID of the VPC the cluster is deployed in"
 }
 
-variable "source_security_group_id" {
-  description = "The ID of the VPC default security group"
-}
-
 variable "k8s_node_label" {
   description = "The label on the EKS worker nodes"
 }
 
+variable "source_security_group_id" {
+  description = "The ID of the VPC security group"
+}
+
 variable "vpc_security_group_ids" {
-  description = "ID of the VPC security group"
+  description = "ID of the EKS Instance security group"
+  type        = "list"
 }
 
 variable "use_latest_eks_ami" {
