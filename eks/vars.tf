@@ -2,6 +2,10 @@ variable "eks_cluster_name" {
   description = "The name for all cluster resources"
 }
 
+variable "region_name" {
+  description = "The region in which all the resources are deployed"
+}
+
 variable "eks_private_subnets" {
   description = "List of EKS cluster private subnets"
   type        = "list"
@@ -24,11 +28,6 @@ variable "source_security_group_id" {
   description = "The ID of the VPC security group"
 }
 
-variable "vpc_security_group_ids" {
-  description = "ID of the EKS Instance security group"
-  type        = "list"
-}
-
 variable "use_latest_eks_ami" {
   description = "Set to true if you want to use the latest AMI"
   default     = true
@@ -36,7 +35,6 @@ variable "use_latest_eks_ami" {
 
 variable "eks_ami_id" {
   description = "The AMI ID used on the EKS worker nodes"
-  default     = "ami-091fc251b67b776c3"
 }
 
 variable "vpc_zone_identifier" {
@@ -82,4 +80,25 @@ variable "key_name" {
 
 variable "key_value" {
   description = "The public value of the SSH key used to gain access to the Instances"
+}
+
+variable "enable_bastion" {
+  description = "If set to true, creates a bastion host and its network resources in a public subnet"
+}
+
+variable "allowed_ssh_cidr" {
+  description = "A list of CIDR Networks to allow ssh access to."
+  default = [
+    "0.0.0.0/0",
+  ]
+}
+
+variable "kubectl_eks_link" {
+  description = "Specifies the kubectl version installed on the bastion host. Must be within one minor version difference of your Amazon EKS cluster control plane"
+  default     = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.13.7/2019-06-11/bin/linux/amd64/kubectl"
+}
+
+variable "iam_eks_link" {
+  description = "Specifies the aws-iam-authenticator download link"
+  default     = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.13.7/2019-06-11/bin/linux/amd64/aws-iam-authenticator"
 }
