@@ -105,3 +105,12 @@ resource "aws_iam_role_policy_attachment" "bastion_ecr_readonly" {
     "aws_iam_role.bastion"
   ]
 }
+
+#
+# SSH key for accessing the bastion and worker Instances
+#
+
+resource "aws_key_pair" "ssh_key" {
+  key_name   = "${var.key_name}"
+  public_key = "${var.key_value}"
+}
