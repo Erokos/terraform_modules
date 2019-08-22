@@ -1,23 +1,8 @@
 # Bastion Host Security Group
 # Allow in traffic on 22 and out on 22 to the eks workers in the private subnets
 resource "aws_security_group" "bastion_eks_sg" {
-    name          = "${var.eks_cluster_name}-bastion-sg"
-    vpc_id        = "${module.eks_vpc.vpc_id}"
-
-  ingress {
-      from_port   = 22
-      to_port     = 22
-      protocol    = "tcp"
-      cidr_blocks = "${var.allowed_ssh_cidr}"
-  }
-  
-  # Allow all outgoing traffic to the outside world
-  egress {
-      from_port   = 0
-      to_port     = 0
-      protocol    = -1
-      cidr_blocks = ["0.0.0.0/0"]
-  }
+  name          = "${var.eks_cluster_name}-bastion-sg"
+  vpc_id        = "${module.eks_vpc.vpc_id}"
 
   tags = {
       Name = "${var.eks_cluster_name}-bastion-sg"
@@ -53,4 +38,53 @@ data "template_file" "eks_bastion_userdata" {
       kubectl_eks_link          = "${var.kubectl_eks_link}"
       iam_authenticator_link    = "${var.iam_eks_link}"
   }
+}
+
+data "aws_ami" "aws_linux" {
+  most_recent = true
+  filter {
+    name = "name"
+    values = ["amzn-ami-hvm-*"]
+  }
+
+  filter {
+    name = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["137112412989"] # aws
+}
+
+# Bastion Launch Configuration and ASG
+resource "aws_launch_configuration" "bastion_eks_lc" {
+    name_prefix          = "${var.bastion_name}-eks-"
+    image_id             = "${data.aws_ami.aws_linux.image_id}"
+    instance_type        = "${var.bastion_instance_type}"
+    key_name             = "${aws_key_pair.ssh_key.key_name}"
+    iam_instance_profile = "${aws_iam_instance_profile.bastion.arn}"
+    security_groups      = ["${aws_security_group.bastion_eks_sg.id}"]
+    user_data_base64     = "${base64encode(data.template_file.eks_bastion_userdata.rendered)}"
+
+    lifecycle {
+        create_before_destroy = true
+    }
+    depends_on = [
+        "aws_security_group.bastion_eks_sg"
+    ]
+}
+
+resource "aws_autoscaling_group" "gdni_bastion_eks_asg" {
+    name                 = "${var.bastion_name}-eks-asg"
+    launch_configuration = "${aws_launch_configuration.bastion_eks_lc.name}"
+    min_size             = "${var.bastion_min_size}"
+    desired_capacity	   = "${var.bastion_desired_capacity}"
+    max_size             = "${var.bastion_max_size}"
+    vpc_zone_identifier  = ["${var.bastion_vpc_zone_identifier}"]
+
+    lifecycle {
+        create_before_destroy = true
+    }
+    depends_on = [
+        "aws_launch_configuration.bastion_eks_lc"
+    ]
 }

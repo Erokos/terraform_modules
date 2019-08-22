@@ -41,17 +41,33 @@ variable "vpc_zone_identifier" {
   description = "List of subnets in which the Instances will be deployed and scaled"
   type        = "list"
 }
+variable "bastion_vpc_zone_identifier" {
+  description = "List of subnets in which the bastion Instances will be deployed"
+  type        = "list"
+}
 
 variable "max_size" {
   description = "The max size of the cluster"
+}
+
+variable "bastion_max_size" {
+  description = "The max number of bastion Instances"
 }
 
 variable "min_size" {
   description = "The minimum size of the cluster"
 }
 
+variable "bastion_min_size" {
+  description = "The minimum number of bastion Instances"
+}
+
 variable "desired_capacity" {
   description = "The desired numbar of Instances for your cluster"
+}
+
+variable "bastion_desired_capacity" {
+  description = "The desired number of bastion Instances"
 }
 
 variable "on_demand_base_capacity" {
@@ -101,4 +117,12 @@ variable "kubectl_eks_link" {
 variable "iam_eks_link" {
   description = "Specifies the aws-iam-authenticator download link"
   default     = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.13.7/2019-06-11/bin/linux/amd64/aws-iam-authenticator"
+}
+
+variable "bastion_name" {
+  description = "The name of the bastion host resource"
+}
+
+variable "bastion_instance_type" {
+  description = "The Instance type of the bastion host"
 }

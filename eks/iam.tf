@@ -70,3 +70,47 @@ resource "aws_key_pair" "ssh_key" {
   key_name	    = "${var.key_name}"
   public_key	= "${var.key_value}"
 }
+
+# 
+# AWS IAM EKS role for Bastion host
+#
+data "aws_iam_policy_document" "bastion_assume_role_policy" {
+  statement {
+    actions = [
+      "sts:AssumeRole"
+    ]
+
+    principals {
+      type        = "Service"
+      identifiers = [
+        "ec2.amazonaws.com"
+      ]
+    }
+  }  
+}
+
+resource "aws_iam_role" "bastion" {
+  name               = "${var.bastion_name}"
+  assume_role_policy = "${data.aws_iam_policy_document.bastion_assume_role_policy.json}" 
+}
+
+resource "aws_iam_instance_profile" "bastion" {
+  name = "${var.bastion_name}"
+  role = "${aws_iam_role.bastion.name}"
+}
+
+resource "aws_iam_policy" "bastion" {
+  name        = "${var.bastion_name}-eks-admin-policy"
+  description = "Policy for EKS Bastion"
+  policy      = "${data.aws_iam_policy_document.bastion_eks_admin_policy.json}"
+}
+
+resource "aws_iam_role_policy_attachment" "bastion" {
+  policy_arn = "${aws_iam_policy.bastion.arn}"
+  role       = "${aws_iam_role.bastion.name}"
+}
+
+resource "aws_iam_role_policy_attachment" "bastion_ecr_readonly" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+  role       = "${aws_iam_role.bastion.name}"
+}
