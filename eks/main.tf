@@ -145,6 +145,7 @@ resource "aws_launch_template" "eks_worker_lt_fixed_ami" {
 }
 
 resource "aws_autoscaling_group" "eks_mixed_instances_asg" {
+  name                 = "${var.eks_ami_id == "" ? format("%s", aws_launch_template.eks_worker_lt_latest_ami.0.name) : aws_launch_template.eks_worker_lt_fixed_ami.0.name}-asg"
   max_size             = "${var.max_size}"
   desired_capacity     = "${var.desired_capacity}"
   min_size             = "${var.min_size}"
@@ -177,6 +178,10 @@ resource "aws_autoscaling_group" "eks_mixed_instances_asg" {
         instance_type = "${var.instance_type_pool3}"
       }
     }
+  }
+
+  lifecycle {
+      create_before_destroy = true
   }
 
   tag {

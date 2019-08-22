@@ -41,36 +41,6 @@ resource "aws_iam_instance_profile" "eks_node_profile" {
   role = "${aws_iam_role.eks_node_role.name}"
 }
 
-# Allow mutating the EKS Route53 hosted zone
-data "aws_iam_policy_document" "eks_node_allow_route53" {
-  statement {
-    actions = [
-      "route53:ChangeResourceRecordSets"
-    ]
-    resources = [
-      "arn:aws:route53:::hostedzone/${aws_route53_zone.eks_private.zone_id}"
-    ]
-  }
-  statement {
-    actions = [
-      "route53:ListHostedZones",
-      "route53:ListResourceRecordSets"
-    ]
-    resources = ["*"]
-  }
-}
-
-resource "aws_iam_role_policy" "eks_node_allow_route53" {
-  name = "eks_node_allow_route53"
-  role = "${aws_iam_role.eks_node_role.id}"
-  policy = "${data.aws_iam_policy_document.eks_node_allow_route53.json}"
-}
-
-resource "aws_key_pair" "ssh_key" {
-  key_name	    = "${var.key_name}"
-  public_key	= "${var.key_value}"
-}
-
 # 
 # AWS IAM EKS role for Bastion host
 #
@@ -91,26 +61,47 @@ data "aws_iam_policy_document" "bastion_assume_role_policy" {
 
 resource "aws_iam_role" "bastion" {
   name               = "${var.bastion_name}"
-  assume_role_policy = "${data.aws_iam_policy_document.bastion_assume_role_policy.json}" 
+  assume_role_policy = "${data.aws_iam_policy_document.bastion_assume_role_policy.json}"
+
+  depends_on = [
+    "aws_security_group.bastion_eks_sg",
+    "aws_autoscaling_group.bastion_eks_asg"
+  ]
 }
 
 resource "aws_iam_instance_profile" "bastion" {
   name = "${var.bastion_name}"
   role = "${aws_iam_role.bastion.name}"
+
+  depends_on = [
+    "aws_iam_role.bastion"
+  ]
 }
 
 resource "aws_iam_policy" "bastion" {
   name        = "${var.bastion_name}-eks-admin-policy"
   description = "Policy for EKS Bastion"
   policy      = "${data.aws_iam_policy_document.bastion_eks_admin_policy.json}"
+
+  depends_on = [
+    "aws_iam_role.bastion"
+  ]
 }
 
 resource "aws_iam_role_policy_attachment" "bastion" {
   policy_arn = "${aws_iam_policy.bastion.arn}"
   role       = "${aws_iam_role.bastion.name}"
+
+  depends_on = [
+    "aws_iam_role.bastion"
+  ]
 }
 
 resource "aws_iam_role_policy_attachment" "bastion_ecr_readonly" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
   role       = "${aws_iam_role.bastion.name}"
+
+  depends_on = [
+    "aws_iam_role.bastion"
+  ]
 }
