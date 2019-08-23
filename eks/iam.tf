@@ -42,6 +42,39 @@ resource "aws_iam_instance_profile" "eks_node_profile" {
 }
 
 # 
+# AWS IAM role for EKS service
+#
+data "aws_iam_policy_document" "eks_assume_role_policy" {
+  statement {
+    actions = [
+      "sts:AssumeRole"
+    ]
+    principals {
+      type        = "Service"
+      identifiers = [
+        "eks.amazonaws.com"
+      ]
+    }
+  }
+}
+
+resource "aws_iam_role" "eks_cluster" {
+  name               = "${var.eks_cluster_name}-service-role"
+  assume_role_policy = "${data.aws_iam_policy_document.eks_assume_role_policy.json}"
+  path               = "/"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_cluster_AmazonEKSClusterPolicy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  role       = "${aws_iam_role.eks_cluster.name}"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_cluster_AmazonEKSServicePolicy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"
+  role       = "${aws_iam_role.eks_cluster.name}"
+}
+
+# 
 # AWS IAM EKS role for Bastion host
 #
 data "aws_iam_policy_document" "bastion_assume_role_policy" {
@@ -59,51 +92,43 @@ data "aws_iam_policy_document" "bastion_assume_role_policy" {
   }  
 }
 
+data "aws_iam_policy_document" "bastion_eks_admin_policy" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "eks:*",
+      "iam:PutRolePolicy"  # required by kubeflow
+    ]
+
+    resources = ["*"]
+  }
+}
+
 resource "aws_iam_role" "bastion" {
   name               = "${var.bastion_name}"
   assume_role_policy = "${data.aws_iam_policy_document.bastion_assume_role_policy.json}"
-
-  depends_on = [
-    "aws_security_group.bastion_eks_sg",
-    "aws_autoscaling_group.bastion_eks_asg"
-  ]
 }
 
 resource "aws_iam_instance_profile" "bastion" {
   name = "${var.bastion_name}"
   role = "${aws_iam_role.bastion.name}"
-
-  depends_on = [
-    "aws_iam_role.bastion"
-  ]
 }
 
 resource "aws_iam_policy" "bastion" {
   name        = "${var.bastion_name}-eks-admin-policy"
   description = "Policy for EKS Bastion"
   policy      = "${data.aws_iam_policy_document.bastion_eks_admin_policy.json}"
-
-  depends_on = [
-    "aws_iam_role.bastion"
-  ]
 }
 
 resource "aws_iam_role_policy_attachment" "bastion" {
   policy_arn = "${aws_iam_policy.bastion.arn}"
   role       = "${aws_iam_role.bastion.name}"
-
-  depends_on = [
-    "aws_iam_role.bastion"
-  ]
 }
 
 resource "aws_iam_role_policy_attachment" "bastion_ecr_readonly" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
   role       = "${aws_iam_role.bastion.name}"
-
-  depends_on = [
-    "aws_iam_role.bastion"
-  ]
 }
 
 #

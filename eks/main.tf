@@ -7,7 +7,7 @@ resource "aws_eks_cluster" "eks_cluster" {
   role_arn     = "${aws_iam_role.eks_cluster.arn}"
 
   vpc_config {
-    subnet_ids = ["${var.eks_private_subnets}"]
+    subnet_ids = ["${var.vpc_zone_identifier}"]
   }
 }
 
@@ -129,7 +129,6 @@ resource "aws_launch_template" "eks_worker_lt_latest_ami" {
 
 resource "aws_launch_template" "eks_worker_lt_fixed_ami" {
   count = "${1 - var.use_latest_eks_ami}"
-
 
   name                    = "${var.eks_cluster_name}-lt"
   disable_api_termination = false

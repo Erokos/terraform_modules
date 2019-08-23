@@ -11,5 +11,5 @@ output "kubeconfig_certificate_authority_data" {
 }
 
 output "ami_id" {
-  value = "${var.eks_ami_id == "" ? format("%s", data.aws_ami.bastion.id) : var.eks_ami_id}"
+  value = "${var.eks_ami_id == "" ? format("%s", data.aws_ami.eks_worker.id) : var.eks_ami_id}"
 }

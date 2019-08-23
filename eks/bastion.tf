@@ -3,7 +3,7 @@
 resource "aws_security_group" "bastion_eks_sg" {
   count         = "${var.enable_bastion ? 1 : 0}"
   name          = "${var.eks_cluster_name}-bastion-sg"
-  vpc_id        = "${module.eks_vpc.vpc_id}"
+  vpc_id        = "${var.vpc_id}"
 
   tags = {
       Name = "${var.eks_cluster_name}-bastion-sg"
@@ -31,7 +31,7 @@ resource "aws_security_group_rule" "bastion_egress" {
   to_port                  = 0
   protocol                 = "-1"
   cidr_blocks              = ["0.0.0.0/0"]
-  security_group_id        = "${aws.aws_security_group.bastion_eks_sg.0.id}"
+  security_group_id        = "${aws_security_group.bastion_eks_sg.0.id}"
 
   depends_on = [
     "aws_security_group.bastion_eks_sg"
@@ -67,7 +67,6 @@ data "aws_ami" "aws_linux" {
 # Bastion Launch Configuration and ASG
 resource "aws_launch_configuration" "bastion_eks_lc" {
   count                = "${var.enable_bastion ? 1 : 0}"
-  name                 = "${var.bastion_name}-eks-lc"
   image_id             = "${data.aws_ami.aws_linux.image_id}"
   instance_type        = "${var.bastion_instance_type}"
   key_name             = "${aws_key_pair.ssh_key.key_name}"
@@ -75,23 +74,27 @@ resource "aws_launch_configuration" "bastion_eks_lc" {
   security_groups      = ["${aws_security_group.bastion_eks_sg.0.id}"]
   user_data_base64     = "${base64encode(data.template_file.eks_bastion_userdata.rendered)}"
 
+  lifecycle {
+      create_before_destroy = true
+  }
+
   depends_on = [
       "aws_security_group.bastion_eks_sg"
   ]
 }
 
 resource "aws_autoscaling_group" "bastion_eks_asg" {
-    name                 = "${aws_launch_configuration.bastion_eks_lc.0.name}-eks-asg"
-    launch_configuration = "${aws_launch_configuration.bastion_eks_lc.0.name}"
-    min_size             = "${var.bastion_min_size}"
-    desired_capacity	   = "${var.bastion_desired_capacity}"
-    max_size             = "${var.bastion_max_size}"
-    vpc_zone_identifier  = ["${var.bastion_vpc_zone_identifier}"]
+  name                 = "${aws_launch_configuration.bastion_eks_lc.0.name}-eks-asg"
+  launch_configuration = "${aws_launch_configuration.bastion_eks_lc.0.name}"
+  min_size             = "${var.bastion_min_size}"
+  desired_capacity	   = "${var.bastion_desired_capacity}"
+  max_size             = "${var.bastion_max_size}"
+  vpc_zone_identifier  = ["${var.bastion_vpc_zone_identifier}"]
 
-    lifecycle {
-        create_before_destroy = true
-    }
-    depends_on = [
-        "aws_launch_configuration.bastion_eks_lc"
-    ]
+  lifecycle {
+      create_before_destroy = true
+  }
+  depends_on = [
+      "aws_launch_configuration.bastion_eks_lc"
+  ]
 }

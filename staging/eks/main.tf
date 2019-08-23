@@ -66,11 +66,11 @@ module "eks_cluster" {
   max_size                                 = 3
   min_size                                 = 1
   desired_capacity                         = 2
+  on_demand_base_capacity                  = 1
+  on_demand_percentage_above_base_capacity = 0
   bastion_max_size                         = 1
   bastion_min_size                         = 1
   bastion_desired_capacity                 = 1
-  on_demand_base_capacity                  = 1
-  on_demand_percentage_above_base_capacity = 0
   instance_type_pool1                      = "t2.micro"
   instance_type_pool2                      = "t3.nano"
   instance_type_pool3                      = "t3.micro"

@@ -1,7 +1,8 @@
 #!/bin/bash -xe  
 
 # Install python 3
-sudo -u ec2-user yum update -y && sudo -u ec2-user yum install -y python36.x86_64
+sudo yum update -y
+sudo yum install -y python36.x86_64
 
 # Install Git just in case
 sudo yum install -y git

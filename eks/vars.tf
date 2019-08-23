@@ -6,15 +6,15 @@ variable "region_name" {
   description = "The region in which all the resources are deployed"
 }
 
-variable "eks_private_subnets" {
-  description = "List of EKS cluster private subnets"
-  type        = "list"
-}
-
-variable "eks_public_subnets" {
-  description = "List of EKS public subnets"
-  type        = "list"
-}
+#variable "eks_private_subnets" {
+#  description = "List of EKS cluster private subnets"
+#  type        = "list"
+#}
+#
+#variable "eks_public_subnets" {
+#  description = "List of EKS public subnets"
+#  type        = "list"
+#}
 
 variable "vpc_id" {
   description = "The ID of the VPC the cluster is deployed in"
