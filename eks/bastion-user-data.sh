@@ -17,13 +17,53 @@ source ~/.bashrc
 # Get the aws-iam-authenticator binary
 curl -O ${iam_authenticator_link}
 chmod +x ./aws-iam-authenticator
-mv ./aws-iam-authenticator /bin/aws-iam-authenticator
+mkdir -p bin
+mv ./aws-iam-authenticator bin
 
 # Upgrade the AWS CLI version
 sudo -u ec2-user pip install awscli --upgrade --user
+
+# Create the authentication configmap
+{
+    echo "apiVersion: v1"
+    echo "kind: ConfigMap"
+    echo "metadata:"
+    echo "  name: aws-auth"
+    echo "  namespace: kube-system"
+    echo "data:"
+    echo "  mapRoles: |"
+    echo "    - rolearn: ${eks_node_role_arn}"
+    echo "      username: system:node:{{EC2PrivateDNSName}}"
+    echo "      groups:"
+    echo "        - system:bootstrappers"
+    echo "        - system:nodes"
+    echo "    - rolearn: ${bastion_role_arn}"
+    echo "      username: ${bastion_name}"
+    echo "      groups:"
+    echo "        - system:masters"
+
+} >> aws-auth-cm.yaml
+
+# Configure the AWS credentials
+mkdir -p .aws
+pushd .aws
+{
+    echo "[default]"
+    echo "aws_access_key_id = ${aws_access_key}"
+    echo "aws_secret_access_key= ${aws_secret_access_key}"
+} >> credentials
+
+{
+    echo "[default]"
+    echo "region = ${region_name}"
+} >> config
+popd
 
 # Download kubectl
 curl -o kubectl ${kubectl_eks_link}
 chmod +x ./kubectl
 mv ./kubectl /bin/kubectl
+
+# Create the kubeconfig and authenticate the nodes and bastion
 sudo -u ec2-user aws eks --region "${region_name}" update-kubeconfig --name "${cluster_name}"
+kubectl apply -f aws-auth-cm.yaml

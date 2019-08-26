@@ -126,3 +126,10 @@ variable "bastion_name" {
 variable "bastion_instance_type" {
   description = "The Instance type of the bastion host"
 }
+variable "aws_access_key" {
+  description = "The access key for your AWS account"
+}
+
+variable "aws_secret_access_key" {
+  description = "The secret access key for your AWS account"
+}
