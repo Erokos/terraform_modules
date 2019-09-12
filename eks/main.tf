@@ -144,6 +144,7 @@ resource "aws_launch_template" "eks_worker_lt_fixed_ami" {
 }
 
 resource "aws_autoscaling_group" "eks_mixed_instances_asg" {
+  #count                = "${var.worker_launch_template_mixed_count}"
   name                 = "${var.eks_ami_id == "" ? format("%s", aws_launch_template.eks_worker_lt_latest_ami.0.name) : aws_launch_template.eks_worker_lt_fixed_ami.0.name}-asg"
   max_size             = "${var.max_size}"
   desired_capacity     = "${var.desired_capacity}"

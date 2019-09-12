@@ -46,6 +46,11 @@ data "template_file" "eks_bastion_userdata" {
       region_name               = "${var.region_name}"
       kubectl_eks_link          = "${var.kubectl_eks_link}"
       iam_authenticator_link    = "${var.iam_eks_link}"
+      bastion_role_arn          = "${aws_iam_role.bastion.arn}"
+      eks_node_role_arn         = "${aws_iam_role.eks_node_role.arn}"
+      bastion_name              = "${var.bastion_name}"
+      aws_access_key            = "${var.aws_access_key}"
+      aws_secret_access_key     = "${var.aws_secret_access_key}"
   }
 }
 

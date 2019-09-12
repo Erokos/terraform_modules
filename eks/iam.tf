@@ -31,7 +31,7 @@ resource "aws_iam_role_policy_attachment" "eks_node_AmazonEKS_CNI_Policy" {
   role       = "${aws_iam_role.eks_node_role.name}"
 }
 
-resource "aws_iam_role_policy_attachment" "gdni_eks_node_AmazonEC2ContainerRegistryReadOnly" {
+resource "aws_iam_role_policy_attachment" "eks_node_AmazonEC2ContainerRegistryReadOnly" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
   role       = "${aws_iam_role.eks_node_role.name}"
 }
