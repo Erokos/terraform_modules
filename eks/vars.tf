@@ -1,9 +1,11 @@
 variable "eks_cluster_name" {
   description = "The name for all cluster resources"
+  default     = "Testing-cluster"
 }
 
 variable "region_name" {
   description = "The region in which all the resources are deployed"
+  default     = "eu-west-1"
 }
 
 #variable "eks_private_subnets" {
@@ -151,9 +153,29 @@ variable "iam_eks_link" {
   default     = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.13.7/2019-06-11/bin/linux/amd64/aws-iam-authenticator"
 }
 
+variable "cni_link" {
+  description = "Specifies the link to the CNI kubernetes files"
+  default     = "https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.5.3/config/v1.5/aws-k8s-cni.yaml"
+}
+
+variable "cluster_kubernetes_version" {
+  description = "Specifies the version of kubernetes for API plane"
+  default     = "1.13"
+}
+
+variable "endpoint_private_access" {
+  description = "Specifies whether or not the Amazon EKS private API server endpoint is enabled. Default is false."
+  default     = false
+}
+
+variable "endpoint_public_access" {
+  description = "whether or not the Amazon EKS public API server endpoint is enabled. Default is true."
+  default     = true
+}
+
 variable "bastion_name" {
   description = "The name of the bastion host resource"
-  default     = ""
+  default     = "bastion-test"
 }
 
 variable "bastion_instance_type" {

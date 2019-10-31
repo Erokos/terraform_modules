@@ -67,3 +67,6 @@ mv ./kubectl /bin/kubectl
 # Create the kubeconfig and authenticate the nodes and bastion
 sudo -u ec2-user aws eks --region "${region_name}" update-kubeconfig --name "${cluster_name}"
 kubectl apply -f aws-auth-cm.yaml
+
+# Apply the specified CNI version
+kubectl apply -f ${cni_link}

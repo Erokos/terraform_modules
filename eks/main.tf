@@ -5,9 +5,12 @@ resource "aws_eks_cluster" "eks_cluster" {
   name         = "${var.eks_cluster_name}"
 
   role_arn     = "${aws_iam_role.eks_cluster.arn}"
+  version      = "${var.cluster_kubernetes_version}"
 
   vpc_config {
     subnet_ids = ["${var.vpc_zone_identifier}"]
+    endpoint_private_access = "${var.endpoint_private_access}"
+    endpoint_public_access  = "${var.endpoint_public_access}"
   }
 }
 
@@ -136,7 +139,7 @@ resource "aws_launch_template" "eks_worker_lt_fixed_ami" {
     name = "${aws_iam_instance_profile.eks_node_profile.name}"
   }
   vpc_security_group_ids               = ["${aws_security_group.eks_node_sg.id}"]
-  image_id                             = "${var.eks_ami_id}" # Using a fixed version of kubectl 1.12.7 -> ami-091fc251b67b776c3
+  image_id                             = "${var.eks_ami_id}" # Using a fixed version of kubectl 1.12.7 -> ami-091fc251b67b776c3, for 1.13.11, for 1.14.7: ami-059c6874350e63ca9
   instance_initiated_shutdown_behavior = "terminate"
   key_name                             = "${aws_key_pair.ssh_key.key_name}"
   

@@ -7,6 +7,11 @@ variable "region_name" {
   default = "eu-central-1"
 }
 
+variable "eks_ami_id" {
+  default = "ami-023b82bb04ff20c6d"
+}
+
+
 variable "key_name" {
   default = "module.pub"
 }

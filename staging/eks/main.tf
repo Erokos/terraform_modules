@@ -62,7 +62,8 @@ module "eks_cluster" {
   k8s_node_label                           = "lifecycle=spot"
   source_security_group_id                 = "${module.eks_vpc.default_security_group_id}"
   use_latest_eks_ami                       = false
-  eks_ami_id                               = "ami-04341c15c2f941589"
+  cluster_kubernetes_version               = "1.12"
+  eks_ami_id                               = "${var.eks_ami_id}" # default is currently 1.12.10, for 1.13.11 is ami-0c5d8b180f6256839, for 1.14.7 is ami-0e21bc066a9dbabfa
   max_size                                 = 3
   min_size                                 = 1
   desired_capacity                         = 2
