@@ -37,8 +37,9 @@ resource "aws_iam_role_policy_attachment" "eks_node_AmazonEC2ContainerRegistryRe
 }
 
 resource "aws_iam_instance_profile" "eks_node_profile" {
-  name = "${var.eks_cluster_name}-node-profile"
-  role = "${aws_iam_role.eks_node_role.name}"
+  count        = "${var.worker_launch_template_lst[count.index]}"
+  name_prefix  = "${var.eks_cluster_name}-node-profile"
+  role         = "${aws_iam_role.eks_node_role.name}"
 }
 
 # 
@@ -138,4 +139,14 @@ resource "aws_iam_role_policy_attachment" "bastion_ecr_readonly" {
 resource "aws_key_pair" "ssh_key" {
   key_name   = "${var.key_name}"
   public_key = "${var.key_value}"
+}
+
+resource "null_resource" "tags_as_a_list_of_maps" {
+  count = "${length(keys(var.tags))}"
+
+  triggers = {
+    key                 = "${element(keys(var.tags), count.index)}"
+    value               = "${element(values(var.tags), count.index)}"
+    propagate_at_launch = "true"
+  }
 }

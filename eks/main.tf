@@ -100,85 +100,115 @@ data "aws_ami" "eks_worker" {
   owners      = ["602401143452"] # Amazon EKS AMI Account ID
 }
 
+
+
 # EKS currently documents this required userdata for EKS worker nodes to
 # properly configure Kubernetes applications on the EC2 instance.
 data "template_file" "eks_node_userdata" {
+  count = "${var.worker_launch_template_mixed_count}"
   template = "${file("${path.module}/user-data.sh")}"
 
   vars {
       kubeconfig_cert_auth_data = "${aws_eks_cluster.eks_cluster.certificate_authority.0.data}"
       cluster_endpoint          = "${aws_eks_cluster.eks_cluster.endpoint}"
       cluster_name              = "${var.eks_cluster_name}"
-      node_label                = "${var.k8s_node_label}"
+      node_label                = "${lookup(var.worker_launch_template_lst[count.index], "kubelet_extra_args", local.worker_lt_defaults["kubelet_extra_args"])}"
   }
 }
 
-resource "aws_launch_template" "eks_worker_lt_latest_ami" {
-  count = "${var.use_latest_eks_ami}"
+resource "aws_launch_template" "eks_worker_lt_mixed" {
+  count = "${var.worker_launch_template_mixed_count}"
 
+  name                    = "${var.eks_cluster_name}-${lookup(var.worker_launch_template_lst[count.index], "name", count.index)}-lt"
+  disable_api_termination = "${lookup(var.worker_launch_template_lst[count.index], "disable_api_termination", local.worker_lt_defaults["disable_api_termination"])}"
 
-  name                    = "${var.eks_cluster_name}-lt"
-  disable_api_termination = false
   iam_instance_profile {
     name = "${aws_iam_instance_profile.eks_node_profile.name}"
   }
-  vpc_security_group_ids               = ["${aws_security_group.eks_node_sg.id}"]
-  image_id                             = "${data.aws_ami.eks_worker.id}" # Using the latest AMI version
-  instance_initiated_shutdown_behavior = "terminate"
-  key_name                             = "${aws_key_pair.ssh_key.key_name}"
-  
-  user_data = "${base64encode(data.template_file.eks_node_userdata.rendered)}"
-}
 
-resource "aws_launch_template" "eks_worker_lt_fixed_ami" {
-  count = "${1 - var.use_latest_eks_ami}"
-
-  name                    = "${var.eks_cluster_name}-lt"
-  disable_api_termination = false
-  iam_instance_profile {
-    name = "${aws_iam_instance_profile.eks_node_profile.name}"
+  network_interfaces {
+    associate_public_ip_address = "${lookup(var.worker_launch_template_lst[count.index], "public_ip", local.worker_lt_defaults["public_ip"])}"
+    delete_on_termination       = "${lookup(var.worker_launch_template_lst[count.index], "delete_eni", local.worker_lt_defaults["delete_eni"])}"
+    security_groups             = ["${local.worker_security_group_id}"]
   }
+
+  monitoring {
+    enabled = "${lookup(var.worker_launch_template_lst[count.index], "enable_monitoring", local.worker_lt_defaults["enable_monitoring"])}"
+  }
+
+  placement {
+    tenancy = "${lookup(var.worker_launch_template_lst[count.index], "placement_tenancy", local.worker_lt_defaults["placement_tenancy"])}"
+  }
+
   vpc_security_group_ids               = ["${aws_security_group.eks_node_sg.id}"]
-  image_id                             = "${var.eks_ami_id}" # Using a fixed version of kubectl 1.12.7 -> ami-091fc251b67b776c3, for 1.13.11, for 1.14.7: ami-059c6874350e63ca9
-  instance_initiated_shutdown_behavior = "terminate"
+  image_id                             = "${lookup(var.worker_launch_template_lst[count.index], "eks_ami_id", local.worker_lt_defaults["eks_ami_id"])}}" # Using a fixed version of kubectl 1.12.7 -> ami-091fc251b67b776c3, for 1.13.11, for 1.14.7: ami-059c6874350e63ca9
+  user_data                            = "${base64encode(data.template_file.eks_node_userdata.rendered)}"
+  instance_initiated_shutdown_behavior = "${lookup(var.worker_launch_template_lst[count.index], "instance_shutdown_behavior", local.worker_lt_defaults["instance_shutdown_behavior"])}" # defaults to stop
   key_name                             = "${aws_key_pair.ssh_key.key_name}"
+  ebs_optimized                        = "${lookup(var.worker_launch_template_lst[count.index], "ebs_optimized", lookup(local.ebs_optimized, lookup(var.worker_launch_template_lst[count.index], "instance_type", local.worker_lt_defaults["instance_type"]), false))}"
+
+  block_device_mappings {
+    device_name = "${lookup(var.worker_launch_template_lst[count.index], "root_block_device_name", local.worker_lt_defaults["root_block_device_name"])}"
+
+    ebs {
+      volume_size           = "${lookup(var.worker_launch_template_lst[count.index], "root_volume_size", local.worker_lt_defaults["root_volume_size"])}"
+      volume_type           = "${lookup(var.worker_launch_template_lst[count.index], "root_volume_type", local.worker_lt_defaults["root_volume_type"])}"
+      iops                  = "${lookup(var.worker_launch_template_lst[count.index], "root_iops", local.worker_lt_defaults["root_iops"])}"
+      encrypted             = "${lookup(var.worker_launch_template_lst[count.index], "root_encrypted", local.worker_lt_defaults["root_encrypted"])}"
+      kms_key_id            = "${lookup(var.worker_launch_template_lst[count.index], "root_kms_key_id", local.worker_lt_defaults["root_kms_key_id"])}"
+      delete_on_termination = "${lookup(var.worker_launch_template_lst[count.index], "delete_ebs", local.worker_lt_defaults["delete_ebs"])}"
+    }
+  }
   
-  user_data = "${base64encode(data.template_file.eks_node_userdata.rendered)}"
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_autoscaling_group" "eks_mixed_instances_asg" {
-  #count                = "${var.worker_launch_template_mixed_count}"
-  name                 = "${var.eks_ami_id == "" ? format("%s", aws_launch_template.eks_worker_lt_latest_ami.0.name) : aws_launch_template.eks_worker_lt_fixed_ami.0.name}-asg"
-  max_size             = "${var.max_size}"
-  desired_capacity     = "${var.desired_capacity}"
-  min_size             = "${var.min_size}"
-  name                 = "${var.eks_cluster_name}-asg"
-  vpc_zone_identifier = ["${var.vpc_zone_identifier}"] # private subnets to which a bastion host is connected
-  
+  count                   = "${var.worker_launch_template_mixed_count}"
+  name                    = "${var.eks_cluster_name}-${lookup(var.worker_launch_template_lst[count.index], "name", count.index)}-asg"
+  max_size                = "${lookup(var.worker_launch_template_lst[count.index], "asg_max_size", local.worker_lt_defaults["asg_max_size"])}"
+  desired_capacity        = "${lookup(var.worker_launch_template_lst[count.index], "asg_desired_capacity", local.worker_lt_defaults["asg_desired_capacity"])}"
+  min_size                = "${lookup(var.worker_launch_template_lst[count.index], "asg_min_size", local.worker_lt_defaults["asg_min_size"])}"
+  force_delete            = "${lookup(var.worker_launch_template_lst[count.index], "asg_force_delete", local.worker_lt_defaults["asg_force_delete"])}"
+  vpc_zone_identifier     = ["${split(",", coalesce(lookup(var.worker_launch_template_lst[count.index], "eks_worker_subnets", ""), local.worker_lt_defaults["eks_worker_subnets"]))}"] # private subnets to which a bastion host is connected
+  target_group_arns       = ["${compact(split(",", coalesce(lookup(var.worker_launch_template_lst[count.index], "target_group_arns", ""), local.worker_lt_defaults["target_group_arns"])))}"]
+  service_linked_role_arn = "${lookup(var.worker_launch_template_lst[count.index], "service_linked_role_arn", local.worker_lt_defaults["service_linked_role_arn"])}"
+  protect_from_scale_in   = "${lookup(var.worker_launch_template_lst[count.index], "protect_from_scale_in", local.worker_lt_defaults["protect_from_scale_in"])}"
+  suspended_processes     = ["${compact(split(",", coalesce(lookup(var.worker_launch_template_lst[count.index], "suspended_processes", ""), local.worker_lt_defaults["suspended_processes"])))}"]
+  enabled_metrics         = ["${compact(split(",", coalesce(lookup(var.worker_launch_template_lst[count.index], "enabled_metrics", ""), local.worker_lt_defaults["enabled_metrics"])))}"]
+  placement_group         = "${lookup(var.worker_launch_template_lst[count.index], "placement_group", local.worker_lt_defaults["placement_group"])}"
+  termination_policies    = ["${compact(split(",", coalesce(lookup(var.worker_launch_template_lst[count.index], "termination_policies", ""), local.worker_lt_defaults["termination_policies"])))}"]
+
   # This setting will guarantee 1 "On-Demand" instance at all times and scale using Spot Instances
   # from pools listed below in the order specified
   mixed_instances_policy = {
     instances_distribution = {
-      on_demand_base_capacity = "${var.on_demand_base_capacity}"
-      on_demand_percentage_above_base_capacity = "${var.on_demand_percentage_above_base_capacity}"
+      on_demand_allocation_strategy            = "${lookup(var.worker_launch_template_lst[count.index], "on_demand_allocation_strategy", local.worker_lt_defaults["on_demand_allocation_strategy"])}"
+      on_demand_base_capacity                  = "${lookup(var.worker_launch_template_lst[count.index], "on_demand_base_capacity", local.worker_lt_defaults["on_demand_base_capacity"])}"
+      on_demand_percentage_above_base_capacity = "${lookup(var.worker_launch_template_lst[count.index], "on_demand_percentage_above_base_capacity", local.worker_lt_defaults["on_demand_percentage_above_base_capacity"])}"
+      spot_allocation_strategy                 = "${lookup(var.worker_launch_template_lst[count.index], "spot_allocation_strategy", local.worker_lt_defaults["spot_allocation_strategy"])}"
+      spot_instance_pools                      = "${lookup(var.worker_launch_template_lst[count.index], "spot_instance_pools", local.worker_lt_defaults["spot_instance_pools"])}"
+      spot_max_price                           = "${lookup(var.worker_launch_template_lst[count.index], "spot_max_price", local.worker_lt_defaults["spot_max_price"])}"
     }
 
     launch_template {
       launch_template_specification {
-        launch_template_id = "${element(concat(aws_launch_template.eks_worker_lt_fixed_ami.*.id, aws_launch_template.eks_worker_lt_latest_ami.*.id), 0)}"
-        version = "$$Latest"
+        launch_template_id = "${element(aws_launch_template.eks_worker_lt_mixed.*.id, count.index)}"
+        version            = "${lookup(var.worker_launch_template_lst[count.index], "launch_template_version", local.worker_lt_defaults["launch_template_version"])}"
       }
 
       override {
-        instance_type = "${var.instance_type_pool1}"
+        instance_type = "${lookup(var.worker_launch_template_lst[count.index], "instance_type_pool1", local.worker_lt_defaults["instance_type_pool1"])}"
       }
 
       override {
-        instance_type = "${var.instance_type_pool2}"
+        instance_type = "${lookup(var.worker_launch_template_lst[count.index], "instance_type_pool2", local.worker_lt_defaults["instance_type_pool2"])}"
       }
 
       override {
-        instance_type = "${var.instance_type_pool3}"
+        instance_type = "${lookup(var.worker_launch_template_lst[count.index], "instance_type_pool3", local.worker_lt_defaults["instance_type_pool3"])}"
       }
     }
   }
@@ -187,15 +217,12 @@ resource "aws_autoscaling_group" "eks_mixed_instances_asg" {
       create_before_destroy = true
   }
 
-  tag {
-    key                 = "${var.eks_cluster_name}-mixed-instances-asg"
-    value               = "${var.eks_cluster_name}-worker-node"
-    propagate_at_launch = true
-  }
-
-  tag {
-    key                 = "kubernetes.io/cluster/${var.eks_cluster_name}"
-    value               = "owned"
-    propagate_at_launch = true
-  }
+  tags = ["${concat(
+    list(
+      map("key", "Name", "value", "${aws_eks_cluster.eks_cluster.name}-${lookup(var.worker_launch_template_lst[count.index], "name", count.index)}-asg", "propagate_at_launch", true),
+      map("key", "kubernetes.io/cluster/${aws_eks_cluster.eks_cluster.name}", "value", "owned", "propagate_at_launch", true),
+      map("key", "${aws_eks_cluster.eks_cluster.name}-worker-node-asg", "value", "${lookup(var.worker_launch_template_lst[count.index], "kubelet_extra_args", count.index)}", "propagate_at_launch", true)
+    ),
+    local.asg_tags
+  )}"]
 }

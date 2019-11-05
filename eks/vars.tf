@@ -8,11 +8,11 @@ variable "region_name" {
   default     = "eu-west-1"
 }
 
-#variable "eks_private_subnets" {
-#  description = "List of EKS cluster private subnets"
-#  type        = "list"
-#}
-#
+variable "eks_worker_subnets" {
+  description = "List of EKS subnets to place the workers in"
+  type        = "list"
+}
+
 #variable "eks_public_subnets" {
 #  description = "List of EKS public subnets"
 #  type        = "list"
@@ -22,22 +22,8 @@ variable "vpc_id" {
   description = "The ID of the VPC the cluster is deployed in"
 }
 
-variable "k8s_node_label" {
-  description = "The label on the EKS worker nodes"
-}
-
 variable "source_security_group_id" {
   description = "The ID of the VPC security group"
-}
-
-variable "use_latest_eks_ami" {
-  description = "Set to true if you want to use the latest AMI"
-  default     = true
-}
-
-variable "eks_ami_id" {
-  description = "The AMI ID used on the EKS worker nodes"
-  default     = ""
 }
 
 variable "vpc_zone_identifier" {
@@ -49,19 +35,9 @@ variable "bastion_vpc_zone_identifier" {
   type        = "list"
 }
 
-variable "max_size" {
-  description = "The max size of the cluster"
-  default     = "3"
-}
-
 variable "bastion_max_size" {
   description = "The max number of bastion Instances"
   default     = "2"
-}
-
-variable "min_size" {
-  description = "The minimum size of the cluster"
-  default     = "1"
 }
 
 variable "bastion_min_size" {
@@ -85,7 +61,7 @@ variable "worker_launch_template_mixed_count" {
 }
 
 variable "worker_launch_template_lst" {
-  description = "A list of maps defining worker Instance group configurations"
+  description = "A list of maps defining worker instance group configurations to be defined using launch templates with mixed instance policy. See worker_lt_defaults in locals.tf for valid keys."
   type        = "list"
 
   default = [
@@ -95,30 +71,15 @@ variable "worker_launch_template_lst" {
   ]
 }
 
-
-variable "on_demand_base_capacity" {
-  description = "The number of on demand Instances to start with"
-  default     = "1"
+variable "tags" {
+  description = "A map of tags to add to all resources."  
+  type        = "map"
+  default     = {}
 }
 
-variable "on_demand_percentage_above_base_capacity" {
-  description = "The percentage of scaled Instances that are on demand"
-  default     = "0"
-}
-
-variable "instance_type_pool1" {
-  description = "The first instance type pool in which to look for Instances"
-  default     = "m5.xlarge"
-}
-
-variable "instance_type_pool2" {
-  description = "The second instance type pool in which to look for Instances"
-  default     = "c5.xlarge"
-}
-
-variable "instance_type_pool3" {
-  description = "The third instance type pool in which to look for Instances"
-  default     = "c4.xlarge"
+variable "worker_security_group_id" {
+  description = "If provided, all workers will be attached tothis security group. If not, a sg will be created correctly to work with the cluster"
+  default     = ""
 }
 
 variable "key_name" {
@@ -150,7 +111,7 @@ variable "kubectl_eks_link" {
 
 variable "iam_eks_link" {
   description = "Specifies the aws-iam-authenticator download link"
-  default     = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.13.7/2019-06-11/bin/linux/amd64/aws-iam-authenticator"
+  default     = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/aws-iam-authenticator"
 }
 
 variable "cni_link" {

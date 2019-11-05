@@ -13,7 +13,12 @@ output "kubeconfig_certificate_authority_data" {
   value       = "${aws_eks_cluster.eks_cluster.certificate_authority.0.data}"
 }
 
-output "ami_id" {
-  description = "The AMI ID used for your EKS worker Instances"
-  value = "${var.eks_ami_id == "" ? format("%s", data.aws_ami.eks_worker.id) : var.eks_ami_id}"
+output "cluster_arn" {
+  description = "The Amazon Resource Name (ARN) of the cluster"
+  value = "${aws_eks_cluster.eks_cluster.arn}"
+}
+
+output "cluster_version" {
+  description = "The Kubernetes server version for the EKS cluster"
+  value = "${aws_eks_cluster.eks_cluster.version}"
 }
