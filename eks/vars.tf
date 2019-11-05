@@ -45,11 +45,6 @@ variable "bastion_min_size" {
   default     = "1"
 }
 
-#variable "desired_capacity" {
-#  description = "The desired numbar of Instances for your cluster"
-#  default     = "1"
-#}
-
 variable "bastion_desired_capacity" {
   description = "The desired number of bastion Instances"
   default     = "1"
@@ -141,7 +136,7 @@ variable "bastion_name" {
 
 variable "bastion_instance_type" {
   description = "The Instance type of the bastion host"
-  default     ="t2.micro"
+  default     = "t2.micro"
 }
 
 variable "aws_access_key" {

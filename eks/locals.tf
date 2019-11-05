@@ -22,8 +22,6 @@ locals {
     enabled_metrics                          = ""                                      # # A comma delimited list of metrics to be collected i.e. GroupMinSize,GroupMaxSize,GroupDesiredCapacity...
     termination_policies                     = ""                                      # A list of policies to decide how the instances in the auto scale group should be terminated. The allowed values are OldestInstance, NewestInstance, OldestLaunchConfiguration...
     spot_max_price                           = ""                                      # Maximum price per unit hour that the user is willing to pay for the Spot instances. Default is the on-demand price
-    on_demand_base_capacity                  = "1"                                     # Minimum number of on-demand Instances per ASG.
-    on_demand_percentage_above_base_capacity = "0"                                     # Percentage of on-demand Instances deployed when scaling over the base capacity.
     kubelet_extra_args                       = ""                                      # String passed directly to kubelet. Useful for adding labels or taints.
     disable_api_termination                  = false                                   # Controls whether the instance can be terminated using the console, CLI, or API
     iam_worker_role_id                       = "${local.default_iam_worker_role_id}"   # A custom IAM worker role id.
@@ -34,7 +32,7 @@ locals {
     placement_group                          = ""                                      # The name of the placement group into which to launch the instances, if any.
     placement_tenancy                        = "default"                               # The tenancy of the instance. Valid values are "default" or "dedicated".
     on_demand_allocation_strategy            = "prioritized"                           # Strategy to use when launching on-demand instances. Valid values: prioritized. Default: prioritized. 
-    on_demand_base_capacity                  = "0"                                     # Absolute minimum amount of desired capacity that must be fulfilled by on-demand instances. Default: 0.
+    on_demand_base_capacity                  = "1"                                     # Absolute minimum amount of desired capacity that must be fulfilled by on-demand instances. Default: 0.
     on_demand_percentage_above_base_capacity = "0"                                     # Percentage split between on-demand and Spot instances above the base on-demand capacity.
     spot_allocation_strategy                 = "lowest-price"                          # The only valid value is lowest-price, which is also the default value. The Auto Scaling group selects the cheapest Spot pools and evenly allocates your Spot capacity across the number of Spot pools that you specify.
     spot_instance_pools                      = "10"                                    # Number of Spot pools per availability zone to allocate capacity. EC2 Auto Scaling selects the cheapest Spot pools and evenly allocates Spot capacity across the number of Spot pools that you specify.
