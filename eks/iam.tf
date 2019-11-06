@@ -37,7 +37,7 @@ resource "aws_iam_role_policy_attachment" "eks_node_AmazonEC2ContainerRegistryRe
 }
 
 resource "aws_iam_instance_profile" "eks_node_profile" {
-  count        = "${var.worker_launch_template_lst[count.index]}"
+  count        = "${var.worker_launch_template_mixed_count}"
   name_prefix  = "${var.eks_cluster_name}-node-profile"
   role         = "${aws_iam_role.eks_node_role.name}"
 }
