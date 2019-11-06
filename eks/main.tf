@@ -123,7 +123,7 @@ resource "aws_launch_template" "eks_worker_lt_mixed" {
   disable_api_termination = "${lookup(var.worker_launch_template_lst[count.index], "disable_api_termination", local.worker_lt_defaults["disable_api_termination"])}"
 
   iam_instance_profile {
-    name = "${element(aws_iam_instance_profile.eks_node_profile.*.name}, count.index)"
+    name = "${element(aws_iam_instance_profile.eks_node_profile.*.name, count.index)}"
   }
 
   network_interfaces {
