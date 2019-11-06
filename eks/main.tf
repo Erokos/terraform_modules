@@ -145,7 +145,7 @@ resource "aws_launch_template" "eks_worker_lt_mixed" {
   user_data                            = "${base64encode(element(data.template_file.eks_node_userdata.*.rendered, count.index))}"
   instance_initiated_shutdown_behavior = "${lookup(var.worker_launch_template_lst[count.index], "instance_shutdown_behavior", local.worker_lt_defaults["instance_shutdown_behavior"])}" # defaults to stop
   key_name                             = "${aws_key_pair.ssh_key.key_name}"
-  ebs_optimized                        = "${lookup(var.worker_launch_template_lst[count.index], "ebs_optimized", lookup(local.ebs_optimized, lookup(var.worker_launch_template_lst[count.index], "instance_type", local.worker_lt_defaults["instance_type"]), false))}"
+  ebs_optimized                        = "${lookup(var.worker_launch_template_lst[count.index], "ebs_optimized", lookup(local.ebs_optimized, lookup(var.worker_launch_template_lst[count.index], "instance_type_pool1", local.worker_lt_defaults["instance_type_pool1"]), false))}"
 
   block_device_mappings {
     device_name = "${lookup(var.worker_launch_template_lst[count.index], "root_block_device_name", local.worker_lt_defaults["root_block_device_name"])}"
