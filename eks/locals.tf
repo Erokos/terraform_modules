@@ -40,7 +40,7 @@ locals {
     
     # Block device settings
     ebs_optimized                            = true                                                # If true, the launched EC2 instance will be EBS-optimized.
-    root_block_device_name                   = "${data.aws_ami.eks_worker.root_block_device_name}" # Root device name for the worker instances. If none is provided, the assumption is that the default AMI was used.
+    root_block_device_name                   = "${data.aws_ami.eks_worker.root_device_name}"       # Root device name for the worker instances. If none is provided, the assumption is that the default AMI was used.
     root_volume_size                         = "100"                                               # The root volume size of the worker instances.
     root_volume_type                         = "gp2"                                               # The root volume type of the worker instances, can be 'standard', 'gp' or 'io1'.
     root_iops                                = "0"                                                 # The amount of provisioned IOPS. This must be set with a volume type "io1".
