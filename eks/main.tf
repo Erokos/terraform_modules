@@ -130,6 +130,7 @@ resource "aws_launch_template" "eks_worker_lt_mixed" {
     associate_public_ip_address = "${lookup(var.worker_launch_template_lst[count.index], "public_ip", local.worker_lt_defaults["public_ip"])}"
     delete_on_termination       = "${lookup(var.worker_launch_template_lst[count.index], "delete_eni", local.worker_lt_defaults["delete_eni"])}"
     #security_groups             = ["${local.worker_security_group_id}"]
+    security_groups             = ["${aws_security_group.eks_node_sg.id}"]
   }
 
   monitoring {
