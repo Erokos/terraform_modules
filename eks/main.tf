@@ -88,7 +88,7 @@ resource "aws_security_group_rule" "eks_cluster_ingress_node_https" {
 data "aws_ami" "eks_worker" {
   filter {
     name   = "name"
-    values = ["amazon-eks-node-*"]
+    values = ["amazon-eks-node-${var.cluster_kubernetes_version}-${var.worker_ami_name_filter}"]
   }
 
   filter {

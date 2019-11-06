@@ -119,6 +119,11 @@ variable "cluster_kubernetes_version" {
   default     = "1.13"
 }
 
+variable "worker_ami_name_filter" {
+  description = "Additional name filter for AWS EKS worker AMI. Default behaviour will get latest for the cluster_version but could be set to a release from amazon-eks-ami, e.g. \"v20190220\""
+  default     = "v*"
+}
+
 variable "endpoint_private_access" {
   description = "Specifies whether or not the Amazon EKS private API server endpoint is enabled. Default is false."
   default     = false
