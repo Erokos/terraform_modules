@@ -142,7 +142,7 @@ resource "aws_launch_template" "eks_worker_lt_mixed" {
 
   vpc_security_group_ids               = ["${aws_security_group.eks_node_sg.id}"]
   image_id                             = "${lookup(var.worker_launch_template_lst[count.index], "eks_ami_id", local.worker_lt_defaults["eks_ami_id"])}}" # ami-091fc251b67b776c3, for 1.13.11, for 1.14.7: ami-059c6874350e63ca9
-  user_data                            = "${base64encode(data.template_file.eks_node_userdata.rendered)}"
+  user_data                            = "${base64encode(element(data.template_file.eks_node_userdata.*.rendered, count.index))}"
   instance_initiated_shutdown_behavior = "${lookup(var.worker_launch_template_lst[count.index], "instance_shutdown_behavior", local.worker_lt_defaults["instance_shutdown_behavior"])}" # defaults to stop
   key_name                             = "${aws_key_pair.ssh_key.key_name}"
   ebs_optimized                        = "${lookup(var.worker_launch_template_lst[count.index], "ebs_optimized", lookup(local.ebs_optimized, lookup(var.worker_launch_template_lst[count.index], "instance_type", local.worker_lt_defaults["instance_type"]), false))}"
