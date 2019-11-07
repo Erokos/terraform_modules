@@ -45,19 +45,19 @@ sudo -u ec2-user pip install awscli --upgrade --user
 } >> aws-auth-cm.yaml
 
 # Configure the AWS credentials
-mkdir -p /home/ec2-user/.aws
-pushd /home/ec2-user/.aws
-{
-    echo "[default]"
-    echo "aws_access_key_id = ${aws_access_key}"
-    echo "aws_secret_access_key= ${aws_secret_access_key}"
-} >> credentials
-
-{
-    echo "[default]"
-    echo "region = ${region_name}"
-} >> config
-popd
+#mkdir -p /home/ec2-user/.aws
+#pushd /home/ec2-user/.aws
+# {
+#    echo "[default]"
+#    echo "aws_access_key_id = ${aws_access_key}"
+#    echo "aws_secret_access_key= ${aws_secret_access_key}"
+#} >> credentials
+#
+# {
+#    echo "[default]"
+#    echo "region = ${region_name}"
+#} >> config
+#popd
 
 # Download kubectl
 curl -o kubectl ${kubectl_eks_link}
