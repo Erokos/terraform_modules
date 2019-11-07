@@ -17,8 +17,7 @@ source ~/.bashrc
 # Get the aws-iam-authenticator binary
 curl -O ${iam_authenticator_link}
 chmod +x ./aws-iam-authenticator
-mkdir -p bin
-mv ./aws-iam-authenticator bin
+mv ./aws-iam-authenticator bin/
 
 # Upgrade the AWS CLI version
 sudo -u ec2-user pip install awscli --upgrade --user
@@ -45,19 +44,19 @@ sudo -u ec2-user pip install awscli --upgrade --user
 } >> aws-auth-cm.yaml
 
 # Configure the AWS credentials
-mkdir -p .aws
-pushd .aws
-{
-    echo "[default]"
-    echo "aws_access_key_id = ${aws_access_key}"
-    echo "aws_secret_access_key= ${aws_secret_access_key}"
-} >> credentials
+#mkdir -p .aws
+#pushd .aws
+# {
+#    echo "[default]"
+#    echo "aws_access_key_id = ${aws_access_key}"
+#    echo "aws_secret_access_key= ${aws_secret_access_key}"
+#} >> credentials
 
-{
-    echo "[default]"
-    echo "region = ${region_name}"
-} >> config
-popd
+# {
+#    echo "[default]"
+#    echo "region = ${region_name}"
+#} >> config
+#popd
 
 # Download kubectl
 curl -o kubectl ${kubectl_eks_link}
