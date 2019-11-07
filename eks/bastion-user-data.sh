@@ -44,6 +44,8 @@ sudo -u ec2-user pip install awscli --upgrade --user
 
 } >> aws-auth-cm.yaml
 
+chown ec2-user aws-auth-cm.yaml
+
 # Download kubectl
 curl -o kubectl ${kubectl_eks_link}
 chmod +x ./kubectl
