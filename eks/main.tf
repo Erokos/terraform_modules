@@ -100,8 +100,6 @@ data "aws_ami" "eks_worker" {
   owners      = ["602401143452"] # Amazon EKS AMI Account ID
 }
 
-
-
 # EKS currently documents this required userdata for EKS worker nodes to
 # properly configure Kubernetes applications on the EC2 instance.
 data "template_file" "eks_node_userdata" {
@@ -119,7 +117,7 @@ data "template_file" "eks_node_userdata" {
 resource "aws_launch_template" "eks_worker_lt_mixed" {
   count = "${var.worker_launch_template_mixed_count}"
 
-  name                    = "${var.eks_cluster_name}-${lookup(var.worker_launch_template_lst[count.index], "name", count.index)}-lt"
+  #name                    = "${var.eks_cluster_name}-${lookup(var.worker_launch_template_lst[count.index], "name", count.index)}-lt"
   disable_api_termination = "${lookup(var.worker_launch_template_lst[count.index], "disable_api_termination", local.worker_lt_defaults["disable_api_termination"])}"
 
   iam_instance_profile {
@@ -129,7 +127,7 @@ resource "aws_launch_template" "eks_worker_lt_mixed" {
   #network_interfaces {
   #  associate_public_ip_address = "${lookup(var.worker_launch_template_lst[count.index], "public_ip", local.worker_lt_defaults["public_ip"])}"
   #  delete_on_termination       = "${lookup(var.worker_launch_template_lst[count.index], "delete_eni", local.worker_lt_defaults["delete_eni"])}"
-  #  #security_groups             = ["${local.worker_security_group_id}"]
+  #  security_groups             = ["${local.worker_security_group_id}"]
   #}
 
   monitoring {
@@ -141,8 +139,7 @@ resource "aws_launch_template" "eks_worker_lt_mixed" {
   }
 
   vpc_security_group_ids               = ["${aws_security_group.eks_node_sg.id}"]
-  image_id                             = "${lookup(var.worker_launch_template_lst[count.index], "eks_ami_id", local.worker_lt_defaults["eks_ami_id"])}" # ami-091fc251b67b776c3, for 1.13.11, for 1.14.7: ami-059c6874350e63ca9
-  #image_id                             = "ami-0c5d8b180f6256839"
+  image_id                             = "${lookup(var.worker_launch_template_lst[count.index], "eks_ami_id", local.worker_lt_defaults["eks_ami_id"])}"
   user_data                            = "${base64encode(element(data.template_file.eks_node_userdata.*.rendered, count.index))}"
   instance_initiated_shutdown_behavior = "${lookup(var.worker_launch_template_lst[count.index], "instance_shutdown_behavior", local.worker_lt_defaults["instance_shutdown_behavior"])}" # defaults to stop
   key_name                             = "${aws_key_pair.ssh_key.key_name}"
@@ -168,7 +165,8 @@ resource "aws_launch_template" "eks_worker_lt_mixed" {
 
 resource "aws_autoscaling_group" "eks_mixed_instances_asg" {
   count                   = "${var.worker_launch_template_mixed_count}"
-  name                    = "${var.eks_cluster_name}-${lookup(var.worker_launch_template_lst[count.index], "name", count.index)}-asg"
+  #name                    = "${var.eks_cluster_name}-${lookup(var.worker_launch_template_lst[count.index], "name", count.index)}-asg"
+  name                    = "${element(aws_launch_template.eks_worker_lt_mixed.*.name, count.index)}-${lookup(var.worker_launch_template_lst[count.index], "name", count.index)}-asg"
   max_size                = "${lookup(var.worker_launch_template_lst[count.index], "asg_max_size", local.worker_lt_defaults["asg_max_size"])}"
   desired_capacity        = "${lookup(var.worker_launch_template_lst[count.index], "asg_desired_capacity", local.worker_lt_defaults["asg_desired_capacity"])}"
   min_size                = "${lookup(var.worker_launch_template_lst[count.index], "asg_min_size", local.worker_lt_defaults["asg_min_size"])}"
@@ -196,8 +194,9 @@ resource "aws_autoscaling_group" "eks_mixed_instances_asg" {
 
     launch_template {
       launch_template_specification {
-        launch_template_id = "${element(aws_launch_template.eks_worker_lt_mixed.*.id, count.index)}"
-        version            = "${lookup(var.worker_launch_template_lst[count.index], "launch_template_version", local.worker_lt_defaults["launch_template_version"])}"
+        launch_template_name = "${element(aws_launch_template.eks_worker_lt_mixed.*.name, count.index)}"
+        #version              = "${lookup(var.worker_launch_template_lst[count.index], "launch_template_version", local.worker_lt_defaults["launch_template_version"])}"
+        version              = "${element(aws_launch_template.eks_worker_lt_mixed.*.latest_version, count.index)}"
       }
 
       override {
@@ -217,6 +216,10 @@ resource "aws_autoscaling_group" "eks_mixed_instances_asg" {
   lifecycle {
       create_before_destroy = true
   }
+
+  depends_on = [
+    "aws_launch_template.eks_worker_lt_mixed"
+  ]
 
   tags = ["${concat(
     list(

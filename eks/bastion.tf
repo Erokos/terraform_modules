@@ -101,6 +101,8 @@ resource "aws_autoscaling_group" "bastion_eks_asg" {
       create_before_destroy = true
   }
   depends_on = [
-      "aws_launch_configuration.bastion_eks_lc"
+      "aws_launch_configuration.bastion_eks_lc",
+      "aws_eks_cluster.eks_cluster",
+      "aws_autoscaling_group.eks_mixed_instances_asg"
   ]
 }

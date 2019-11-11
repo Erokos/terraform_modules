@@ -45,6 +45,7 @@ sudo -u ec2-user pip install awscli --upgrade --user
 } >> aws-auth-cm.yaml
 
 chown ec2-user aws-auth-cm.yaml
+chgrp ec2-user aws-auth-cm.yaml
 
 # Download kubectl
 curl -o kubectl ${kubectl_eks_link}
@@ -52,6 +53,21 @@ chmod +x ./kubectl
 mv ./kubectl /bin/kubectl
 
 # Create the kubeconfig and authenticate the nodes and bastion
+mkdir -p /home/ec2-user/.aws
+pushd /home/ec2-user/.aws
+
+{
+    echo "[default]"
+    echo "aws_access_key_id = ${aws_access_key}"
+    echo "aws_secret_access_key = ${aws_secret_access_key}"
+} >> credentials
+
+{
+    echo "[default]"
+    echo "region = ${region_name}"
+} >> config
+
+popd
 sudo -u ec2-user aws eks --region "${region_name}" update-kubeconfig --name "${cluster_name}"
 kubectl apply -f aws-auth-cm.yaml
 

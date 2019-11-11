@@ -22,3 +22,12 @@ output "cluster_version" {
   description = "The Kubernetes server version for the EKS cluster"
   value = "${aws_eks_cluster.eks_cluster.version}"
 }
+
+output "warning" {
+  value = "When updating the cluster kubernetes version specify the right kubectl link for the bastion host!"
+}
+
+output "credentials_warning" {
+  value = "Specify your AWS credentials as Terraform variables in order to fully automate cluster creation!"
+}
+
