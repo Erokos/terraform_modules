@@ -150,6 +150,11 @@ resource "aws_instance" "bastion_host" {
   lifecycle {
     ignore_changes = ["security_groups"]
   }
+
+  tags = ["${
+    list(
+      map("key", "Name", "value", "${var.bastion_name}-${aws_eks_cluster.eks_cluster.name}", "propagate_at_launch", true)
+  )}"]
 }
 
 # Bastion Launch Configuration and ASG
@@ -192,6 +197,11 @@ resource "aws_autoscaling_group" "bastion_eks_asg_workers_lt" {
       "aws_eks_cluster.eks_cluster",
       "aws_autoscaling_group.eks_mixed_instances_asg"
   ]
+
+  tags = ["${
+    list(
+      map("key", "Name", "value", "${var.bastion_name}-${aws_eks_cluster.eks_cluster.name}", "propagate_at_launch", true)
+  )}"]
 }
 
 resource "aws_autoscaling_group" "bastion_eks_asg_workers_lc" {
@@ -212,6 +222,11 @@ resource "aws_autoscaling_group" "bastion_eks_asg_workers_lc" {
       "aws_eks_cluster.eks_cluster",
       "aws_autoscaling_group.eks_launch_config_worker_asg"
   ]
+
+  tags = ["${
+    list(
+      map("key", "Name", "value", "${var.bastion_name}-${aws_eks_cluster.eks_cluster.name}", "propagate_at_launch", true)
+  )}"]
 }
 
 resource "aws_autoscaling_group" "bastion_eks_asg_workers_ng" {
@@ -232,4 +247,9 @@ resource "aws_autoscaling_group" "bastion_eks_asg_workers_ng" {
       "aws_eks_cluster.eks_cluster",
       "aws_eks_node_group.eks_worker_ng"
   ]
+
+  tags = ["${
+    list(
+      map("key", "Name", "value", "${var.bastion_name}-${aws_eks_cluster.eks_cluster.name}", "propagate_at_launch", true)
+  )}"]
 }
