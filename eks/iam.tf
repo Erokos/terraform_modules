@@ -42,6 +42,12 @@ resource "aws_iam_instance_profile" "eks_node_profile" {
   role         = "${aws_iam_role.eks_node_role.name}"
 }
 
+resource "aws_iam_instance_profile" "eks_node_profile_lc" {
+  count        = "${var.worker_launch_config_count}"
+  name_prefix  = "${var.eks_cluster_name}-node-profile-lc"
+  role         = "${aws_iam_role.eks_node_role.name}"
+}
+
 # 
 # AWS IAM role for EKS service
 #

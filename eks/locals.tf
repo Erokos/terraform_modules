@@ -10,6 +10,7 @@ locals {
     asg_max_size                             = "4"                                     # The maximum number of deployed worker Instances.
     asg_min_size                             = "1"                                     # The minimum number of deployed worker Instances.
     asg_force_delete                         = false                                   # Enable forced deletion for the autoscaling group.
+    instance_type                            = "m5.large"                              # Default instance type when using launch configurations for worker nodes.
     instance_type_pool1                      = "m5.xlarge"                             # Override instance type 1 for mixed instances policy.
     instance_type_pool2                      = "c5.xlarge"                             # Override instance type 2 for mixed instances policy.
     instance_type_pool3                      = "c4.xlarge"                             # Override instance type 3 for mixed instances policy.
@@ -50,7 +51,13 @@ locals {
     
 
     # Bastion settings
-    bastion_subnets = "${join(",", var.bastion_vpc_zone_identifier)}" # A comma delimited string of subnets to deploy the bastion host(s) in.
+    bastion_subnets    = "${join(",", var.bastion_vpc_zone_identifier)}" # A comma delimited string of subnets to deploy the bastion host(s) in.
+    bastion_spot_price = ""
+
+    # Node Group settings
+    k8s_label_key      = ""           # Worker node Kubernetes label key. E.g. for a label "lifecycle=spot", the k8s_label_key is lifecycle
+    k8s_kabel_value    = ""           # Worker node Kubernetes label value. E.g. for a label "lifecycle=spot", the k8s_label_key is spot
+    ng_ami_id          = "AL2_x86_64" # Type of Amazon Machine Image (AMI) associated with the EKS Node Group. Valid values: AL2_x86_64, AL2_x86_64_GPU.
   }
 
   ebs_optimized = {

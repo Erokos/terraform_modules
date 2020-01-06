@@ -52,6 +52,7 @@ data "template_file" "eks_bastion_userdata" {
       bastion_name              = "${var.bastion_name}"
       aws_access_key            = "${var.aws_access_key}"
       aws_secret_access_key     = "${var.aws_secret_access_key}"
+      bastion_after_workers_ng  = "${var.bastion_after_workers_ng}"
   }
 }
 
@@ -70,15 +71,99 @@ data "aws_ami" "aws_linux" {
   owners = ["137112412989"] # aws
 }
 
-# Bastion Launch Configuration and ASG
-resource "aws_launch_configuration" "bastion_eks_lc" {
+resource "null_resource" "configure_bastion" {
+  depends_on = [
+    "aws_instance.bastion_host",
+    "aws_autoscaling_group.eks_launch_config_worker_asg"
+  ]
+
+  #triggers = {
+   # desired_capacity = "${join(" ", aws_autoscaling_group.eks_launch_config_worker_asg.*.desired_capacity)}"
+  #}
+
+  connection {
+    user        = "ec2-user"
+    type        = "ssh"
+    private_key = "${file(var.pvt_key)}"
+    host        = "${element(aws_instance.bastion_host.*.public_ip, 0)}"
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/bastion-admin.sh"
+    destination = "/home/ec2-user/bastion-admin.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /home/ec2-user/bastion-admin.sh",
+      "/home/ec2-user/bastion-admin.sh ${var.bastion_after_workers_ng} ${var.cni_link}"
+    ]
+  }
+}
+
+resource "null_resource" "drain_nodes" {
+  depends_on = [
+    "aws_instance.bastion_host",
+    "aws_autoscaling_group.eks_launch_config_worker_asg"
+  ]
+
+  triggers = {
+    lc_names = "${join(" ", aws_autoscaling_group.eks_launch_config_worker_asg.*.launch_configuration)}"
+    desired_capacity = "${join(" ", aws_autoscaling_group.eks_launch_config_worker_asg.*.desired_capacity)}"
+  }
+
+  connection {
+    user        = "ec2-user"
+    type        = "ssh"
+    private_key = "${file(var.pvt_key)}"
+    host        = "${element(aws_instance.bastion_host.*.public_ip, 0)}"
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/prepare_nodes.sh"
+    destination = "/home/ec2-user/prepare_nodes.sh"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /home/ec2-user/prepare_nodes.sh",
+      "/home/ec2-user/prepare_nodes.sh ${lookup(var.worker_launch_config_lst[count.index], "eks_ami_id", local.worker_lt_defaults["eks_ami_id"])}"
+    ]
+  }
+}
+
+resource "aws_instance" "bastion_host" {
   count                = "${var.enable_bastion ? 1 : 0}"
+  instance_type        = "${var.bastion_instance_type}"
+  key_name             = "${aws_key_pair.ssh_key.key_name}"
+  ami                  = "${data.aws_ami.aws_linux.image_id}"
+  security_groups      = ["${aws_security_group.bastion_eks_sg.0.id}"]
+  user_data_base64     = "${base64encode(data.template_file.eks_bastion_userdata.rendered)}"
+  iam_instance_profile = "${aws_iam_instance_profile.bastion.name}"
+  subnet_id            = "${element(var.bastion_vpc_zone_identifier, 0)}"
+
+  depends_on = [
+    "aws_eks_cluster.eks_cluster",
+    "aws_autoscaling_group.eks_launch_config_worker_asg"
+  ]
+
+  lifecycle {
+    ignore_changes = ["security_groups"]
+  }
+}
+
+# Bastion Launch Configuration and ASG
+# * Depending on how the workers are created, the bastion resources should be created after
+resource "aws_launch_configuration" "bastion_eks_lc" {
+  count                = "${var.enable_bastion_asg ? 1 : 0}"
+  name_prefix          = "${var.eks_cluster_name}-${var.bastion_name}"
   image_id             = "${data.aws_ami.aws_linux.image_id}"
   instance_type        = "${var.bastion_instance_type}"
   key_name             = "${aws_key_pair.ssh_key.key_name}"
   iam_instance_profile = "${aws_iam_instance_profile.bastion.arn}"
   security_groups      = ["${aws_security_group.bastion_eks_sg.0.id}"]
   user_data_base64     = "${base64encode(data.template_file.eks_bastion_userdata.rendered)}"
+  spot_price           = "${var.bastion_spot_price}"  
 
   lifecycle {
       create_before_destroy = true
@@ -89,7 +174,8 @@ resource "aws_launch_configuration" "bastion_eks_lc" {
   ]
 }
 
-resource "aws_autoscaling_group" "bastion_eks_asg" {
+resource "aws_autoscaling_group" "bastion_eks_asg_workers_lt" {
+  count                = "${var.bastion_after_workers_lt ? 1 : 0}"
   name                 = "${aws_launch_configuration.bastion_eks_lc.0.name}-eks-asg"
   launch_configuration = "${aws_launch_configuration.bastion_eks_lc.0.name}"
   min_size             = "${var.bastion_min_size}"
@@ -100,9 +186,50 @@ resource "aws_autoscaling_group" "bastion_eks_asg" {
   lifecycle {
       create_before_destroy = true
   }
+
   depends_on = [
       "aws_launch_configuration.bastion_eks_lc",
       "aws_eks_cluster.eks_cluster",
       "aws_autoscaling_group.eks_mixed_instances_asg"
+  ]
+}
+
+resource "aws_autoscaling_group" "bastion_eks_asg_workers_lc" {
+  count                = "${var.bastion_after_workers_lc ? 1 : 0}"
+  name                 = "${aws_launch_configuration.bastion_eks_lc.0.name}-eks-asg"
+  launch_configuration = "${aws_launch_configuration.bastion_eks_lc.0.name}"
+  min_size             = "${var.bastion_min_size}"
+  desired_capacity	   = "${var.bastion_desired_capacity}"
+  max_size             = "${var.bastion_max_size}"
+  vpc_zone_identifier  = ["${var.bastion_vpc_zone_identifier}"]
+
+  lifecycle {
+      create_before_destroy = true
+  }
+  
+  depends_on = [
+      "aws_launch_configuration.bastion_eks_lc",
+      "aws_eks_cluster.eks_cluster",
+      "aws_autoscaling_group.eks_launch_config_worker_asg"
+  ]
+}
+
+resource "aws_autoscaling_group" "bastion_eks_asg_workers_ng" {
+  count                = "${var.bastion_after_workers_ng ? 1 : 0}"
+  name                 = "${aws_launch_configuration.bastion_eks_lc.0.name}-eks-asg"
+  launch_configuration = "${aws_launch_configuration.bastion_eks_lc.0.name}"
+  min_size             = "${var.bastion_min_size}"
+  desired_capacity	   = "${var.bastion_desired_capacity}"
+  max_size             = "${var.bastion_max_size}"
+  vpc_zone_identifier  = ["${var.bastion_vpc_zone_identifier}"]
+
+  lifecycle {
+      create_before_destroy = true
+  }
+  
+  depends_on = [
+      "aws_launch_configuration.bastion_eks_lc",
+      "aws_eks_cluster.eks_cluster",
+      "aws_eks_node_group.eks_worker_ng"
   ]
 }

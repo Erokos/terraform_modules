@@ -22,6 +22,17 @@ variable "vpc_id" {
   description = "The ID of the VPC the cluster is deployed in"
 }
 
+variable "vpc_cidr_block" {
+  description = "The VPC cidr block used with node group creation"
+  default     = ""
+}
+
+variable "private_subnets_cidrs" {
+  description = "The cidr blocks of the VPC private subnets used in node group creation"
+  type        = "list"
+  default     = []
+}
+
 variable "source_security_group_id" {
   description = "The ID of the VPC security group"
 }
@@ -55,8 +66,41 @@ variable "worker_launch_template_mixed_count" {
   default     = "0"
 }
 
+variable "worker_launch_config_count" {
+  description = "The number of maps in the worker_launch_config_lst list"
+  default     = "0"
+}
+
+variable "worker_node_group_count" {
+  description = "The number of maps in the worker_node_group_lst list"
+  default     = "0"
+}
+
+
 variable "worker_launch_template_lst" {
   description = "A list of maps defining worker instance group configurations to be defined using launch templates with mixed instance policy. See worker_lt_defaults in locals.tf for valid keys."
+  type        = "list"
+
+  default = [
+    {
+      "name" = "default"
+    },
+  ]
+}
+
+variable "worker_launch_config_lst" {
+  description = "A list of maps defininig worker instance group configurations to be defined using launch configurations. See worker_lt_defaults in locals.tf for valid keys."
+  type        = "list"
+
+  default = [
+    {
+      "name" = "default"
+    },
+  ]
+}
+
+variable "worker_node_group_lst" {
+  description = "A list of maps defininig worker instance group configurations to be defined using node groups. See worker_lt_defaults in locals.tf for valid keys."
   type        = "list"
 
   default = [
@@ -72,14 +116,25 @@ variable "tags" {
   default     = {}
 }
 
+variable "k8s_ng_labels" {
+  description = "A map of k8s worker node labels."
+  type        = "map"
+  default     = {}
+}
+
+
 variable "worker_security_group_id" {
-  description = "If provided, all workers will be attached tothis security group. If not, a sg will be created correctly to work with the cluster"
+  description = "If provided, all workers will be attached to this security group. If not, a sg will be created correctly to work with the cluster"
   default     = ""
 }
 
 variable "key_name" {
   description = "The name of the SSH key used to gain access to the worker and bastion Instances"
   default     = ""
+}
+
+variable "pvt_key" {
+  description = "The path to the private SSH key used for remote-exec to gain access to the worker and bastion Instances"
 }
 
 variable "key_value" {
@@ -92,6 +147,25 @@ variable "enable_bastion" {
   default     = true
 }
 
+variable "enable_bastion_asg" {
+  description = "If set to true, creates a bastion host auto scaling group and its network resources in a public subnet"
+  default     = false
+}
+
+variable "bastion_after_workers_lt" {
+  description = "If set to true, the bastion host will be created via an asg after the workers described by launch templates."  
+  default = false
+}
+
+variable "bastion_after_workers_lc" {
+  description = "If set to true, the bastion host will be created via an asg after the workers described by launch configurations."
+  default     = false
+}
+
+variable "bastion_after_workers_ng" {
+  description = "If set to true, the bastion host will be created via an asg after the workers described by node groups."
+  default     = false
+}
 variable "allowed_ssh_cidr" {
   description = "A list of CIDR Networks to allow ssh access to."
   default = [
@@ -119,6 +193,11 @@ variable "cluster_kubernetes_version" {
   default     = "1.13"
 }
 
+variable "eks_ami_version" {
+  description = "Specifies the version of EKS worker AMI"
+  default     = "1.13"
+}
+
 variable "worker_ami_name_filter" {
   description = "Additional name filter for AWS EKS worker AMI. Default behaviour will get latest for the cluster_version but could be set to a release from amazon-eks-ami, e.g. \"v20190220\""
   default     = "v*"
@@ -136,7 +215,12 @@ variable "endpoint_public_access" {
 
 variable "bastion_name" {
   description = "The name of the bastion host resource"
-  default     = "bastion-test"
+  default     = "bastion-host"
+}
+
+variable "bastion_spot_price" {
+  description = "The amount willing to pay for the bastion spot instance"
+  default     = ""
 }
 
 variable "bastion_instance_type" {

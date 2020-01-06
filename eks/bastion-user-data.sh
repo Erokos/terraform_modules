@@ -7,6 +7,9 @@ sudo yum install -y python36.x86_64
 # Install Git just in case
 sudo yum install -y git
 
+# Install jq
+sudo yum install -y jq
+
 # Get the latest pip and install it
 cd /home/ec2-user && curl -O https://bootstrap.pypa.io/get-pip.py
 sudo -u ec2-user python3 get-pip.py --user
@@ -69,7 +72,3 @@ pushd /home/ec2-user/.aws
 
 popd
 sudo -u ec2-user aws eks --region "${region_name}" update-kubeconfig --name "${cluster_name}"
-kubectl apply -f aws-auth-cm.yaml
-
-# Apply the specified CNI version
-kubectl apply -f ${cni_link}

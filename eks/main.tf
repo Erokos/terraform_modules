@@ -84,11 +84,22 @@ resource "aws_security_group_rule" "eks_cluster_ingress_node_https" {
   type                     = "ingress"
 }
 
+resource "aws_security_group_rule" "eks_node_bastion" {
+  description              = "Allow bastion node to access worker nodes"
+  from_port                = 22
+  protocol                 = "tcp"
+  security_group_id        = "${aws_security_group.eks_node_sg.id}"
+  source_security_group_id = "${aws_security_group.bastion_eks_sg.id}"
+  to_port                  = 22
+  type                     = "ingress"
+}
+
+
 # EKS AMI data source
 data "aws_ami" "eks_worker" {
   filter {
     name   = "name"
-    values = ["amazon-eks-node-${var.cluster_kubernetes_version}-${var.worker_ami_name_filter}"]
+    values = ["amazon-eks-node-${var.eks_ami_version}-${var.worker_ami_name_filter}"]
   }
 
   filter {
@@ -111,13 +122,14 @@ data "template_file" "eks_node_userdata" {
       cluster_endpoint          = "${aws_eks_cluster.eks_cluster.endpoint}"
       cluster_name              = "${var.eks_cluster_name}"
       node_label                = "${lookup(var.worker_launch_template_lst[count.index], "kubelet_extra_args", local.worker_lt_defaults["kubelet_extra_args"])}"
+      ami_id                    = "${lookup(var.worker_launch_template_lst[count.index], "eks_ami_id", local.worker_lt_defaults["eks_ami_id"])}"
   }
 }
 
 resource "aws_launch_template" "eks_worker_lt_mixed" {
   count = "${var.worker_launch_template_mixed_count}"
 
-  #name                    = "${var.eks_cluster_name}-${lookup(var.worker_launch_template_lst[count.index], "name", count.index)}-lt"
+  name                    = "${var.eks_cluster_name}-${lookup(var.worker_launch_template_lst[count.index], "name", count.index)}-lt"
   disable_api_termination = "${lookup(var.worker_launch_template_lst[count.index], "disable_api_termination", local.worker_lt_defaults["disable_api_termination"])}"
 
   iam_instance_profile {
@@ -140,6 +152,7 @@ resource "aws_launch_template" "eks_worker_lt_mixed" {
 
   vpc_security_group_ids               = ["${aws_security_group.eks_node_sg.id}"]
   image_id                             = "${lookup(var.worker_launch_template_lst[count.index], "eks_ami_id", local.worker_lt_defaults["eks_ami_id"])}"
+  #image_id                             = "ami-0c5d8b180f6256839"
   user_data                            = "${base64encode(element(data.template_file.eks_node_userdata.*.rendered, count.index))}"
   instance_initiated_shutdown_behavior = "${lookup(var.worker_launch_template_lst[count.index], "instance_shutdown_behavior", local.worker_lt_defaults["instance_shutdown_behavior"])}" # defaults to stop
   key_name                             = "${aws_key_pair.ssh_key.key_name}"
@@ -195,8 +208,8 @@ resource "aws_autoscaling_group" "eks_mixed_instances_asg" {
     launch_template {
       launch_template_specification {
         launch_template_name = "${element(aws_launch_template.eks_worker_lt_mixed.*.name, count.index)}"
-        #version              = "${lookup(var.worker_launch_template_lst[count.index], "launch_template_version", local.worker_lt_defaults["launch_template_version"])}"
-        version              = "${element(aws_launch_template.eks_worker_lt_mixed.*.latest_version, count.index)}"
+        version              = "${lookup(var.worker_launch_template_lst[count.index], "launch_template_version", element(aws_launch_template.eks_worker_lt_mixed.*.latest_version, count.index))}"
+        #version              = "${element(aws_launch_template.eks_worker_lt_mixed.*.latest_version, count.index)}"
       }
 
       override {

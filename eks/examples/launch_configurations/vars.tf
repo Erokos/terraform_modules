@@ -1,16 +1,14 @@
 variable "eks_cluster_name" {
-  description = "The name of all EKS resources"
-  default     = "Staging-eks-cluster"
+  type        = "string"
+  description = "The name of the cluster resources"
+  default     = "gdna-cluster"
 }
 
 variable "region_name" {
-  default = "eu-central-1"
+  type        = "string"
+  description = "The region in which the EKS resources will be deployed in"
+  default     = "eu-central-1"
 }
-
-variable "eks_ami_id" {
-  default = "ami-023b82bb04ff20c6d"
-}
-
 
 variable "key_name" {
   default = "module.pub"
