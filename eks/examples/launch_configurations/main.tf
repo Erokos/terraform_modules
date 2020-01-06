@@ -50,7 +50,7 @@ resource "aws_security_group_rule" "eks_vpc_allow_https" {
 }
 
 module "eks" {
-  source                             = "git::ssh://git@gl.sds.rocks/GDNI/terraform-modules.git//eks?ref=v0.0.3"
+  source                             = "git::ssh://git@gl.sds.rocks/GDNI/terraform-modules.git//eks?ref=v0.0.4"
   #source                             = "../../../../terraform-modules//eks?ref=506051f"
   eks_cluster_name                   = "eks-test-cluster"
   region_name                        = "${var.region_name}"
