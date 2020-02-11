@@ -85,6 +85,7 @@ resource "aws_security_group_rule" "eks_cluster_ingress_node_https" {
 }
 
 resource "aws_security_group_rule" "eks_node_bastion" {
+  count                    = "${var.enable_bastion ? 1 : 0}"
   description              = "Allow bastion node to access worker nodes"
   from_port                = 22
   protocol                 = "tcp"

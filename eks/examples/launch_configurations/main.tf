@@ -50,9 +50,8 @@ resource "aws_security_group_rule" "eks_vpc_allow_https" {
 }
 
 module "eks" {
-  source                             = "git::ssh://git@gl.sds.rocks/GDNI/terraform-modules.git//eks?ref=v0.0.4"
-  #source                             = "../../../../terraform-modules//eks?ref=506051f"
-  eks_cluster_name                   = "eks-test-cluster"
+  source                             = "git::ssh://git@gl.sds.rocks/GDNI/terraform-modules.git//eks?ref=v0.0.3"
+  eks_cluster_name                   = "personalization-test-cluster"
   region_name                        = "${var.region_name}"
   source_security_group_id           = "${module.eks_vpc.default_security_group_id}"
   vpc_id                             = "${module.eks_vpc.vpc_id}"
@@ -61,42 +60,39 @@ module "eks" {
   cluster_kubernetes_version         = "1.13"
   eks_ami_version                    = "1.13"
   bastion_vpc_zone_identifier        = "${module.eks_vpc.public_subnets}"
-  enable_bastion                     = true
-  bastion_name                       = "ultimate-bastion"
+  bastion_after_workers_lc           = true
   eks_worker_subnets                 = "${module.eks_vpc.private_subnets}"
   key_name                           = "${var.key_name}"
   key_value                          = "${var.key_value}"
-  pvt_key                            = "${var.pvt_key}"
-  kubectl_eks_link                   = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl"
-  cni_link                           = "https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.5/config/v1.5/aws-k8s-cni.yaml"
-  aws_access_key                     = "${var.aws_access_key}"
-  aws_secret_access_key              = "${var.aws_secret_access_key}"
+  #kubectl_eks_link                   = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl"
+  aws_access_key                     = "your_access_key"
+  aws_secret_access_key              = "your_secret_key"
 
   worker_launch_config_lst = [
     {
       name                       = "general-purpose"
-      instance_type              = "m5.xlarge"
-      spot_max_price             = "0.214"
-      asg_max_size               = 4
-      asg_desired_capacity       = 3
+      instance_type              = "t3.large"
+      spot_max_price             = ""
+      asg_max_size               = 3
+      asg_desired_capacity       = 2
       kubelet_extra_args         = "lifecycle=spot,worker-type=general-purpose"
-      enable_monitoring          = true
+      enable_monitoring          = false
       key_name                   = "${var.key_name}"
       key_value                  = "${var.key_value}"
-      ebs_optimized              = true
+      ebs_optimized              = false
     },
 
     {
       name                       = "compute-optimized"
-      instance_type              = "c5.xlarge"
-      spot_max_price             = "0.192"
+      instance_type              = "c5.large"
+      spot_max_price             = ""
       asg_max_size               = 3
       asg_desired_capacity       = 2
       kubelet_extra_args         = "lifecycle=spot,worker-type=compute-optimized"
-      enable_monitoring          = true
+      enable_monitoring          = false
       key_name                   = "${var.key_name}"
       key_value                  = "${var.key_value}"
-      ebs_optimized              = true
+      ebs_optimized              = false
     }
   ]
 }

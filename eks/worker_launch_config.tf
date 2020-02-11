@@ -8,6 +8,7 @@ data "template_file" "eks_node_userdata_lc" {
       cluster_name              = "${var.eks_cluster_name}"
       node_label                = "${lookup(var.worker_launch_config_lst[count.index], "kubelet_extra_args", local.worker_lt_defaults["kubelet_extra_args"])}"
       ami_id                    = "${lookup(var.worker_launch_config_lst[count.index], "eks_ami_id", local.worker_lt_defaults["eks_ami_id"])}"
+      instance_type             = "${lookup(var.worker_launch_config_lst[count.index], "instance_type", "")}"
   }
 }
 

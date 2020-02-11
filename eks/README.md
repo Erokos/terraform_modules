@@ -1,12 +1,17 @@
 ## EKS
-This folder describes a terraform module used to create a managed Kubernetes cluster on AWS EKS.
+This folder describes a terraform module used to create a managed Kubernetes 
+cluster on AWS EKS.
 Read the [AWS docs on EKS to get connected to the k8s dashboard](https://docs.aws.amazon.com/eks/latest/userguide/dashboard-tutorial.html)
 
 ### Assumptions
-* You've created a Virtual Private Cloud and subnets where you intend to put the EKS resources
-* You want the solution of an admin bastion host in a public subnet while the EKS Instances are in private
-* You want the option of a less secure solution without a bastion host and the EKS Instances in public subnets
-* You want zero-downtime deployment for any change to the bastion or the EKS cluster
+* You've created a Virtual Private Cloud and subnets where you intend to put the
+EKS resources
+* You want the solution of an admin bastion host in a public subnet while the 
+EKS Instances are in private
+* You want the option of a less secure solution without a bastion host and the 
+EKS Instances in public subnets
+* You want zero-downtime deployment for any change to the bastion or the EKS 
+cluster
 
 ### Prerequisites
 * [terraform](https://www.terraform.io/downloads.html) command line
@@ -14,31 +19,35 @@ tool used for provisioning infrastructure resources.
 Version 0.11 and above but below 0.12 if using the code on `terraform0.11` branch.
 
 #### Layers
-The repository is composed of module directories, such as `eks` and an `examples` directory
-that demonstrates the directory and filestructure through which the modules should be used in another repository.
+The repository is composed of module directories, such as `eks` and an 
+`examples` directory that demonstrates the directory and filestructure through
+which the modules should be used in another repository.
 
 ### Usage example
-A full example of leveraging other community modules is contained in the `examples` directory.
-Here is an example of using the module while leveraging launch configurations:
+A full example of leveraging other community modules is contained in the 
+`examples` directory. Here is an example of using the module while leveraging
+launch configurations:
 
 ```hcl
 module "eks" {
-  source                             = "git::ssh://git@gl.sds.rocks/GDNI/terraform-modules.git//eks?ref=v0.0.6"
-  eks_cluster_name                   = "personalization-test-cluster"
-  region_name                        = "${var.region_name}"
+  source                             = "git::ssh://git@gl.sds.rocks/GDNI/terraform-modules.git//eks?ref=v0.0.11"
+  eks_cluster_name                   = "${var.eks_cluster_name}"
+  region_name                        = "eu-central-1"
   source_security_group_id           = "${module.eks_vpc.default_security_group_id}"
   vpc_id                             = "${module.eks_vpc.vpc_id}"
   vpc_zone_identifier                = "${module.eks_vpc.private_subnets}"
   worker_launch_config_count         = 2
   cluster_kubernetes_version         = "1.13"
+  eks_ami_version                    = "1.13"
   bastion_vpc_zone_identifier        = "${module.eks_vpc.public_subnets}"
+  enable_bastion                     = true
+  bastion_name                       = "personalization-bastion"
   eks_worker_subnets                 = "${module.eks_vpc.private_subnets}"
   key_name                           = "${var.key_name}"
   key_value                          = "${var.key_value}"
   pvt_key                            = "${var.pvt_key}"
-  enable_bastion                     = true
-  bastion_name                       = "ultimate-bastion"
   kubectl_eks_link                   = "https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl"
+  cni_link                           = "https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.5/config/v1.5/aws-k8s-cni.yaml"
   aws_access_key                     = "${var.aws_access_key}"
   aws_secret_access_key              = "${var.aws_secret_access_key}"
 
@@ -58,8 +67,8 @@ module "eks" {
 
     {
       name                       = "compute-optimized"
-      instance_type              = "c5.large"
-      spot_max_price             = "0.097"
+      instance_type              = "c5.xlarge"
+      spot_max_price             = "0.194"
       asg_max_size               = 3
       asg_desired_capacity       = 2
       kubelet_extra_args         = "lifecycle=spot,worker-type=compute-optimized"
@@ -73,14 +82,20 @@ module "eks" {
 ```
 
 ### Zero-downtime deployment
-When the worker node user data, or the AMI id is changed, the module will automatically create new worker nodes with the change applied. 
-As a next step, Terraform usually just terminates the old nodes all at once which causes a short downtime. By itself Terraform doesn't 
-support a rolling update of an auto scaling group of nodes so we used a custom bash script that is executed by a null resource.
-This null resource is triggered whenever a launch configuration is changed, i.e. whenever any of its parameters like user data, ami id etc are changed.
+When the worker node user data, AMI id, or instance type is changed, the module
+will automatically create new worker nodes with the change applied. As a next 
+step, Terraform usually just terminates the old nodes all at once which causes a
+short downtime. By itself Terraform doesn't support a rolling update of an auto 
+scaling group of nodes so we used a custom bash script that is executed by a 
+null resource. This null resource is triggered whenever a launch configuration
+is changed, i.e. whenever any of its parameters like `user data, ami id or 
+instance type` are changed. The `prepare_nodes.sh` script will get triggered
+which will automate node draining. It will know exactly which nodes to drain.
 
 
 ### Inputs
-For a full list of configurable variables and their defaults, check the locals.tf file.
+For a full list of configurable variables and their defaults, check the 
+locals.tf file.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|:----:|:-----:|:-----:|

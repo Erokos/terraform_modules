@@ -102,6 +102,7 @@ resource "null_resource" "configure_bastion" {
 }
 
 resource "null_resource" "drain_nodes" {
+  count = "${var.worker_launch_config_count}"
   depends_on = [
     "aws_instance.bastion_host",
     "aws_autoscaling_group.eks_launch_config_worker_asg"
@@ -127,7 +128,7 @@ resource "null_resource" "drain_nodes" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x /home/ec2-user/prepare_nodes.sh",
-      "/home/ec2-user/prepare_nodes.sh ${lookup(var.worker_launch_config_lst[count.index], "eks_ami_id", local.worker_lt_defaults["eks_ami_id"])}"
+      "/home/ec2-user/prepare_nodes.sh '${lookup(var.worker_launch_config_lst[count.index], "kubelet_extra_args", "")};${lookup(var.worker_launch_config_lst[count.index], "eks_ami_id", local.worker_lt_defaults["eks_ami_id"])};${lookup(var.worker_launch_config_lst[count.index], "instance_type", "")}'"
     ]
   }
 }
@@ -151,10 +152,7 @@ resource "aws_instance" "bastion_host" {
     ignore_changes = ["security_groups"]
   }
 
-  tags = ["${
-    list(
-      map("key", "Name", "value", "${var.bastion_name}-${aws_eks_cluster.eks_cluster.name}", "propagate_at_launch", true)
-  )}"]
+  tags = "${map("key", "Name", "value", "${var.bastion_name}-${aws_eks_cluster.eks_cluster.name}", "propagate_at_launch", true)}"
 }
 
 # Bastion Launch Configuration and ASG
