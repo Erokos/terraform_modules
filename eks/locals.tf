@@ -26,12 +26,12 @@ locals {
     instance_type_pool3                      = "c4.xlarge"                       # Override instance type 3 for mixed instances policy.
     instance_type_pool4                      = "t3.xlarge"                       # Override instance type 4 for mixed instances policy.
     eks_worker_subnets                       = join(",", var.eks_worker_subnets) # A comma delimited string of subnets to place the worker instances in. Usually private subnets.
-    target_group_arns                        = ""                                # A comma delimited list of ALB target group ARNs to be associated to the ASG
+    target_group_arns                        = null                                # A comma delimited list of ALB target group ARNs to be associated to the ASG
     service_linked_role_arn                  = ""                                # Arn of custom service linked role that Auto Scaling group will use. Useful when you have encrypted EBS.
     protect_from_scale_in                    = false                             # The autoscaling group will not select instances with this setting for terminination during scale in events.
-    suspended_processes                      = ""                                # A list of processes to suspend for the AutoScaling Group. The allowed values are Launch, Terminate, HealthCheck, ReplaceUnhealthy, AZRebalance, AlarmNotification, ScheduledActions, AddToLoadBalancer. 
-    enabled_metrics                          = ""                                # # A comma delimited list of metrics to be collected i.e. GroupMinSize,GroupMaxSize,GroupDesiredCapacity...
-    termination_policies                     = ""                                # A list of policies to decide how the instances in the auto scale group should be terminated. The allowed values are OldestInstance, NewestInstance, OldestLaunchConfiguration...
+    suspended_processes                      = []                                # A list of processes to suspend for the AutoScaling Group. The allowed values are Launch, Terminate, HealthCheck, ReplaceUnhealthy, AZRebalance, AlarmNotification, ScheduledActions, AddToLoadBalancer. 
+    enabled_metrics                          = []                                # # A comma delimited list of metrics to be collected i.e. GroupMinSize,GroupMaxSize,GroupDesiredCapacity...
+    termination_policies                     = []                                # A list of policies to decide how the instances in the auto scale group should be terminated. The allowed values are OldestInstance, NewestInstance, OldestLaunchConfiguration...
     spot_max_price                           = ""                                # Maximum price per unit hour that the user is willing to pay for the Spot instances. Default is the on-demand price
     kubelet_extra_args                       = ""                                # String passed directly to kubelet. Useful for adding labels or taints.
     disable_api_termination                  = false                             # Controls whether the instance can be terminated using the console, CLI, or API
