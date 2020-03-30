@@ -17,6 +17,19 @@ sudo -u ec2-user pip install --upgrade pip --user
 export PATH=/home/ec2-user/.local/bin:$PATH && sudo -u ec2-user echo "export PATH=/home/ec2-user/.local/bin:$PATH" >> /home/ec2-user/.bashrc
 source ~/.bashrc
 
+# Install docker
+sudo yum install -y docker
+sudo service docker start
+sudo usermod -a -G docker ec2-user
+
+# Make docker auto-start
+sudo chkconfig docker on
+
+# Install docker-compose
+sudo curl -L https://github.com/docker/compose/releases/download/${docker_compose_tag}/docker-compose-$(uname -s)-$(uname -m) | sudo tee /usr/local/bin/docker-compose > /dev/null
+sudo chmod +x /usr/local/bin/docker-compose
+sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+
 # Get the aws-iam-authenticator binary
 curl -O ${iam_authenticator_link}
 chmod +x ./aws-iam-authenticator

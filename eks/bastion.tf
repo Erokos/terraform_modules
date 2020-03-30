@@ -10,6 +10,7 @@ resource "aws_security_group" "bastion_eks_sg" {
   }
 }
 
+# TODO: Regulate rule creation based on enable_bastion var
 resource "aws_security_group_rule" "bastion_ingress" {
   description              = "Allow only SSH access from any CIDR"
   type                     = "ingress"
