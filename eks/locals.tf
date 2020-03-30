@@ -4,7 +4,14 @@ locals {
     aws_security_group.eks_node_sg.id,
     var.worker_security_group_id,
   )
-  asg_tags = [null_resource.tags_as_a_list_of_maps.*.triggers]
+  asg_tags = [
+    for item in keys(var.tags) :
+    map(
+      "key", item,
+      "value", element(values(var.tags), index(keys(var.tags), item))
+      "propagate_at_launch", "true"
+    )
+  ]
 
   worker_lt_defaults = {
     name                                     = "count.index"                     # The name of the worker group.
