@@ -10,7 +10,7 @@ variable "region_name" {
 
 variable "eks_worker_subnets" {
   description = "List of EKS subnets to place the workers in"
-  type        = "list"
+  type        = list(string)
 }
 
 #variable "eks_public_subnets" {
@@ -29,7 +29,7 @@ variable "vpc_cidr_block" {
 
 variable "private_subnets_cidrs" {
   description = "The cidr blocks of the VPC private subnets used in node group creation"
-  type        = "list"
+  type        = list(string)
   default     = []
 }
 
@@ -39,11 +39,12 @@ variable "source_security_group_id" {
 
 variable "vpc_zone_identifier" {
   description = "List of subnets in which the Instances will be deployed and scaled"
-  type        = "list"
+  type        = list(string)
 }
+
 variable "bastion_vpc_zone_identifier" {
   description = "List of subnets in which the bastion Instances will be deployed"
-  type        = "list"
+  type        = list(string)
 }
 
 variable "bastion_max_size" {
@@ -76,10 +77,9 @@ variable "worker_node_group_count" {
   default     = "0"
 }
 
-
 variable "worker_launch_template_lst" {
   description = "A list of maps defining worker instance group configurations to be defined using launch templates with mixed instance policy. See worker_lt_defaults in locals.tf for valid keys."
-  type        = "list"
+  type        = list(map(string))
 
   default = [
     {
@@ -90,7 +90,7 @@ variable "worker_launch_template_lst" {
 
 variable "worker_launch_config_lst" {
   description = "A list of maps defininig worker instance group configurations to be defined using launch configurations. See worker_lt_defaults in locals.tf for valid keys."
-  type        = "list"
+  type        = list(map(string))
 
   default = [
     {
@@ -101,7 +101,7 @@ variable "worker_launch_config_lst" {
 
 variable "worker_node_group_lst" {
   description = "A list of maps defininig worker instance group configurations to be defined using node groups. See worker_lt_defaults in locals.tf for valid keys."
-  type        = "list"
+  type        = list(map(string))
 
   default = [
     {
@@ -111,17 +111,16 @@ variable "worker_node_group_lst" {
 }
 
 variable "tags" {
-  description = "A map of tags to add to all resources."  
-  type        = "map"
+  description = "A map of tags to add to all resources."
+  type        = map(string)
   default     = {}
 }
 
 variable "k8s_ng_labels" {
   description = "A map of k8s worker node labels."
-  type        = "map"
+  type        = map(string)
   default     = {}
 }
-
 
 variable "worker_security_group_id" {
   description = "If provided, all workers will be attached to this security group. If not, a sg will be created correctly to work with the cluster"
@@ -153,8 +152,8 @@ variable "enable_bastion_asg" {
 }
 
 variable "bastion_after_workers_lt" {
-  description = "If set to true, the bastion host will be created via an asg after the workers described by launch templates."  
-  default = false
+  description = "If set to true, the bastion host will be created via an asg after the workers described by launch templates."
+  default     = false
 }
 
 variable "bastion_after_workers_lc" {
@@ -166,6 +165,7 @@ variable "bastion_after_workers_ng" {
   description = "If set to true, the bastion host will be created via an asg after the workers described by node groups."
   default     = false
 }
+
 variable "allowed_ssh_cidr" {
   description = "A list of CIDR Networks to allow ssh access to."
   default = [
@@ -237,3 +237,4 @@ variable "aws_secret_access_key" {
   description = "The secret access key for your AWS account"
   default     = ""
 }
+
