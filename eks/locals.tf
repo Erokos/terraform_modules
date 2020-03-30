@@ -8,7 +8,7 @@ locals {
     for item in keys(var.tags) :
     map(
       "key", item,
-      "value", element(values(var.tags), index(keys(var.tags), item))
+      "value", element(values(var.tags), index(keys(var.tags), item)),
       "propagate_at_launch", "true"
     )
   ]
