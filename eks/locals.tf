@@ -4,14 +4,7 @@ locals {
     aws_security_group.eks_node_sg.id,
     var.worker_security_group_id,
   )
-  asg_tags = [
-    for item in keys(var.tags) :
-    map(
-      "key", item,
-      "value", element(values(var.tags), index(keys(var.tags), item)),
-      "propagate_at_launch", "true"
-    )
-  ]
+  asg_tags = null_resource.tags_as_list_of_maps.*.triggers
 
   worker_lt_defaults = {
     name                                     = "count.index"                     # The name of the worker group.
@@ -26,10 +19,10 @@ locals {
     instance_type_pool3                      = "c4.xlarge"                       # Override instance type 3 for mixed instances policy.
     instance_type_pool4                      = "t3.xlarge"                       # Override instance type 4 for mixed instances policy.
     eks_worker_subnets                       = join(",", var.eks_worker_subnets) # A comma delimited string of subnets to place the worker instances in. Usually private subnets.
-    target_group_arns                        = null                                # A comma delimited list of ALB target group ARNs to be associated to the ASG
+    target_group_arns                        = null                              # A comma delimited list of ALB target group ARNs to be associated to the ASG
     service_linked_role_arn                  = ""                                # Arn of custom service linked role that Auto Scaling group will use. Useful when you have encrypted EBS.
     protect_from_scale_in                    = false                             # The autoscaling group will not select instances with this setting for terminination during scale in events.
-    suspended_processes                      = []                                # A list of processes to suspend for the AutoScaling Group. The allowed values are Launch, Terminate, HealthCheck, ReplaceUnhealthy, AZRebalance, AlarmNotification, ScheduledActions, AddToLoadBalancer. 
+    suspended_processes                      = []                                # A list of processes to suspend for the AutoScaling Group. The allowed values are Launch, Terminate, HealthCheck, ReplaceUnhealthy, AZRebalance, AlarmNotification, ScheduledActions, AddToLoadBalancer.
     enabled_metrics                          = []                                # # A comma delimited list of metrics to be collected i.e. GroupMinSize,GroupMaxSize,GroupDesiredCapacity...
     termination_policies                     = []                                # A list of policies to decide how the instances in the auto scale group should be terminated. The allowed values are OldestInstance, NewestInstance, OldestLaunchConfiguration...
     spot_max_price                           = ""                                # Maximum price per unit hour that the user is willing to pay for the Spot instances. Default is the on-demand price
@@ -42,7 +35,7 @@ locals {
     enable_monitoring                        = true                              # Enables detailed monitoring of an EC2 instance.
     placement_group                          = ""                                # The name of the placement group into which to launch the instances, if any.
     placement_tenancy                        = "default"                         # The tenancy of the instance. Valid values are "default" or "dedicated".
-    on_demand_allocation_strategy            = "prioritized"                     # Strategy to use when launching on-demand instances. Valid values: prioritized. Default: prioritized. 
+    on_demand_allocation_strategy            = "prioritized"                     # Strategy to use when launching on-demand instances. Valid values: prioritized. Default: prioritized.
     on_demand_base_capacity                  = "1"                               # Absolute minimum amount of desired capacity that must be fulfilled by on-demand instances. Default: 0.
     on_demand_percentage_above_base_capacity = "0"                               # Percentage split between on-demand and Spot instances above the base on-demand capacity.
     spot_allocation_strategy                 = "lowest-price"                    # The only valid value is lowest-price, which is also the default value. The Auto Scaling group selects the cheapest Spot pools and evenly allocates your Spot capacity across the number of Spot pools that you specify.

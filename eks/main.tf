@@ -280,29 +280,16 @@ resource "aws_autoscaling_group" "eks_mixed_instances_asg" {
     "asg_force_delete",
     local.worker_lt_defaults["asg_force_delete"],
   )
-  vpc_zone_identifier = split(
-    ",",
-    coalesce(
-      lookup(
+  # private subnets to which a bastion host is connected
+  vpc_zone_identifier = lookup(
         var.worker_launch_template_lst[count.index],
         "eks_worker_subnets",
-        "",
-      ),
-      local.worker_lt_defaults["eks_worker_subnets"],
-    ),
-  ) # private subnets to which a bastion host is connected
-  target_group_arns = compact(
-    split(
-      ",",
-      coalesce(
-        lookup(
+        local.worker_lt_defaults["eks_worker_subnets"],
+  )
+  target_group_arns = lookup(
           var.worker_launch_template_lst[count.index],
           "target_group_arns",
-          "",
-        ),
-        local.worker_lt_defaults["target_group_arns"],
-      ),
-    ),
+          local.worker_lt_defaults["target_group_arns"],
   )
   service_linked_role_arn = lookup(
     var.worker_launch_template_lst[count.index],
@@ -314,49 +301,25 @@ resource "aws_autoscaling_group" "eks_mixed_instances_asg" {
     "protect_from_scale_in",
     local.worker_lt_defaults["protect_from_scale_in"],
   )
-  suspended_processes = compact(
-    split(
-      ",",
-      coalesce(
-        lookup(
+  suspended_processes = lookup(
           var.worker_launch_template_lst[count.index],
           "suspended_processes",
-          "",
-        ),
-        local.worker_lt_defaults["suspended_processes"],
-      ),
-    ),
+          local.worker_lt_defaults["suspended_processes"],
   )
-  enabled_metrics = compact(
-    split(
-      ",",
-      coalesce(
-        lookup(
+  enabled_metrics = lookup(
           var.worker_launch_template_lst[count.index],
           "enabled_metrics",
-          "",
+          local.worker_lt_defaults["enabled_metrics"],
         ),
-        local.worker_lt_defaults["enabled_metrics"],
-      ),
-    ),
-  )
   placement_group = lookup(
     var.worker_launch_template_lst[count.index],
     "placement_group",
     local.worker_lt_defaults["placement_group"],
   )
-  termination_policies = compact(
-    split(
-      ",",
-      coalesce(
-        lookup(
+  termination_policies = lookup(
           var.worker_launch_template_lst[count.index],
           "termination_policies",
-          "",
-        ),
-        local.worker_lt_defaults["termination_policies"],
-      ),
-    ),
+          local.worker_lt_defaults["termination_policies"],
   )
 
   # This setting will guarantee 1 "On-Demand" instance at all times and scale using Spot Instances

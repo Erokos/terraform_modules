@@ -26,11 +26,7 @@ data "template_file" "eks_node_userdata_lc" {
 
 resource "aws_launch_configuration" "eks_worker_lc" {
   count = var.worker_launch_config_count
-  name_prefix = "${var.eks_cluster_name}-${lookup(
-    var.worker_launch_config_lst[count.index],
-    "name",
-    count.index,
-  )}-lc-"
+  name_prefix = "${var.eks_cluster_name}-${lookup(var.worker_launch_config_lst[count.index], "name", count.index)}-lc-"
   security_groups = [aws_security_group.eks_node_sg.id]
   associate_public_ip_address = lookup(
     var.worker_launch_config_lst[count.index],
@@ -135,29 +131,16 @@ resource "aws_autoscaling_group" "eks_launch_config_worker_asg" {
     "asg_force_delete",
     local.worker_lt_defaults["asg_force_delete"],
   )
-  vpc_zone_identifier = split(
-    ",",
-    coalesce(
-      lookup(
+  # private subnets to which a bastion host is connected
+  vpc_zone_identifier = lookup(
         var.worker_launch_config_lst[count.index],
         "eks_worker_subnets",
-        "",
-      ),
-      local.worker_lt_defaults["eks_worker_subnets"],
-    ),
-  ) # private subnets to which a bastion host is connected
-  target_group_arns = compact(
-    split(
-      ",",
-      coalesce(
-        lookup(
+        local.worker_lt_defaults["eks_worker_subnets"],
+  )
+  target_group_arns = lookup(
           var.worker_launch_config_lst[count.index],
           "target_group_arns",
-          "",
-        ),
-        local.worker_lt_defaults["target_group_arns"],
-      ),
-    ),
+          local.worker_lt_defaults["target_group_arns"],
   )
   service_linked_role_arn = lookup(
     var.worker_launch_config_lst[count.index],
@@ -170,53 +153,30 @@ resource "aws_autoscaling_group" "eks_launch_config_worker_asg" {
     "protect_from_scale_in",
     local.worker_lt_defaults["protect_from_scale_in"],
   )
-  suspended_processes = compact(
-    split(
-      ",",
-      coalesce(
-        lookup(
+  suspended_processes = lookup(
           var.worker_launch_config_lst[count.index],
           "suspended_processes",
-          "",
-        ),
-        local.worker_lt_defaults["suspended_processes"],
-      ),
-    ),
+          local.worker_lt_defaults["suspended_processes"],
   )
-  enabled_metrics = compact(
-    split(
-      ",",
-      coalesce(
-        lookup(
+  enabled_metrics = lookup(
           var.worker_launch_config_lst[count.index],
           "enabled_metrics",
-          "",
-        ),
-        local.worker_lt_defaults["enabled_metrics"],
-      ),
-    ),
+          local.worker_lt_defaults["enabled_metrics"],
   )
   placement_group = lookup(
     var.worker_launch_config_lst[count.index],
     "placement_group",
     local.worker_lt_defaults["placement_group"],
   )
-  termination_policies = compact(
-    split(
-      ",",
-      coalesce(
-        lookup(
+  termination_policies = lookup(
           var.worker_launch_config_lst[count.index],
           "termination_policies",
-          "",
-        ),
-        local.worker_lt_defaults["termination_policies"],
-      ),
-    ),
+          local.worker_lt_defaults["termination_policies"],
   )
 
   lifecycle {
     create_before_destroy = true
+    ignore_changes        = [desired_capacity]
   }
 
   # TF-UPGRADE-TODO: In Terraform v0.10 and earlier, it was sometimes necessary to
@@ -227,16 +187,11 @@ resource "aws_autoscaling_group" "eks_launch_config_worker_asg" {
   # If the expression in the following list itself returns a list, remove the
   # brackets to avoid interpretation as a list of lists. If the expression
   # returns a single list item then leave it as-is and remove this TODO comment.
-  tags = [
-    concat(
+  tags = concat(
       [
         {
           "key" = "Name"
-          "value" = "${aws_eks_cluster.eks_cluster.name}-${lookup(
-            var.worker_launch_config_lst[count.index],
-            "name",
-            count.index,
-          )}-asg"
+          "value" = "${aws_eks_cluster.eks_cluster.name}-${lookup(var.worker_launch_config_lst[count.index], "name", count.index)}-asg"
           "propagate_at_launch" = true
         },
         {
@@ -246,16 +201,11 @@ resource "aws_autoscaling_group" "eks_launch_config_worker_asg" {
         },
         {
           "key" = "${aws_eks_cluster.eks_cluster.name}-worker-node-asg"
-          "value" = lookup(
-            var.worker_launch_config_lst[count.index],
-            "kubelet_extra_args",
-            count.index,
-          )
+          "value" = lookup(var.worker_launch_config_lst[count.index], "kubelet_extra_args", count.index)
           "propagate_at_launch" = true
         },
       ],
       local.asg_tags,
-    ),
-  ]
+    )
 }
 
