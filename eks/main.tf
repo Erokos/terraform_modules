@@ -310,7 +310,7 @@ resource "aws_autoscaling_group" "eks_mixed_instances_asg" {
           var.worker_launch_template_lst[count.index],
           "enabled_metrics",
           local.worker_lt_defaults["enabled_metrics"],
-        ),
+  )
   placement_group = lookup(
     var.worker_launch_template_lst[count.index],
     "placement_group",
