@@ -79,16 +79,14 @@ variable "worker_node_group_count" {
 
 variable "worker_launch_template_lst" {
   description = "A list of maps defining worker instance group configurations to be defined using launch templates with mixed instance policy. See worker_lt_defaults in locals.tf for valid keys."
-  type        = list(any)
-
-  default = []
+  type        = any
+  default     = []
 }
 
 variable "worker_launch_config_lst" {
   description = "A list of maps defininig worker instance group configurations to be defined using launch configurations. See worker_lt_defaults in locals.tf for valid keys."
   type        = any
-
-  default = []
+  default     = []
 }
 
 variable "worker_node_group_lst" {
