@@ -8,7 +8,7 @@ resource "aws_eks_cluster" "eks_cluster" {
   version  = var.cluster_kubernetes_version
 
   vpc_config {
-    subnet_ids              = var.vpc_zone_identifier
+    subnet_ids              = var.eks_worker_subnets
     endpoint_private_access = var.endpoint_private_access
     endpoint_public_access  = var.endpoint_public_access
   }
