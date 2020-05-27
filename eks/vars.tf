@@ -39,7 +39,7 @@ variable "source_security_group_id" {
 
 variable "vpc_zone_identifier" {
   description = "List of subnets in which the Instances will be deployed and scaled"
-  type        = list(string)
+  type        = any
 }
 
 variable "bastion_vpc_zone_identifier" {
@@ -79,35 +79,23 @@ variable "worker_node_group_count" {
 
 variable "worker_launch_template_lst" {
   description = "A list of maps defining worker instance group configurations to be defined using launch templates with mixed instance policy. See worker_lt_defaults in locals.tf for valid keys."
-  type        = list(map(string))
+  type        = any
 
-  default = [
-    {
-      "name" = "default"
-    },
-  ]
+  default = []
 }
 
 variable "worker_launch_config_lst" {
   description = "A list of maps defininig worker instance group configurations to be defined using launch configurations. See worker_lt_defaults in locals.tf for valid keys."
-  type        = list(map(string))
+  type        = any
 
-  default = [
-    {
-      "name" = "default"
-    },
-  ]
+  default = []
 }
 
 variable "worker_node_group_lst" {
   description = "A list of maps defininig worker instance group configurations to be defined using node groups. See worker_lt_defaults in locals.tf for valid keys."
-  type        = list(map(string))
+  type        = any
 
-  default = [
-    {
-      "name" = "default"
-    },
-  ]
+  default = []
 }
 
 variable "tags" {

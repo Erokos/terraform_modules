@@ -30,8 +30,8 @@ locals {
     target_group_arns                        = null                              # A comma delimited list of ALB target group ARNs to be associated to the ASG
     service_linked_role_arn                  = ""                                # Arn of custom service linked role that Auto Scaling group will use. Useful when you have encrypted EBS.
     protect_from_scale_in                    = false                             # The autoscaling group will not select instances with this setting for terminination during scale in events.
-    suspended_processes                      = []                                # A list of processes to suspend for the AutoScaling Group. The allowed values are Launch, Terminate, HealthCheck, ReplaceUnhealthy, AZRebalance, AlarmNotification, ScheduledActions, AddToLoadBalancer.
-    enabled_metrics                          = []                                # # A comma delimited list of metrics to be collected i.e. GroupMinSize,GroupMaxSize,GroupDesiredCapacity...
+    suspended_processes                      = ["AZRebalance"]                   # A list of processes to suspend for the AutoScaling Group. The allowed values are Launch, Terminate, HealthCheck, ReplaceUnhealthy, AZRebalance, AlarmNotification, ScheduledActions, AddToLoadBalancer.
+    enabled_metrics                          = []                                # A comma delimited list of metrics to be collected i.e. GroupMinSize,GroupMaxSize,GroupDesiredCapacity...
     termination_policies                     = []                                # A list of policies to decide how the instances in the auto scale group should be terminated. The allowed values are OldestInstance, NewestInstance, OldestLaunchConfiguration...
     spot_max_price                           = ""                                # Maximum price per unit hour that the user is willing to pay for the Spot instances. Default is the on-demand price
     kubelet_extra_args                       = ""                                # String passed directly to kubelet. Useful for adding labels or taints.
