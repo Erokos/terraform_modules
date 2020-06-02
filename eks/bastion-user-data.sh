@@ -1,4 +1,4 @@
-#!/bin/bash -xe  
+#!/bin/bash -xe
 
 # Install python 3
 sudo yum update -y
